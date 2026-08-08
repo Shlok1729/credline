@@ -14,8 +14,7 @@ We have built a complete end-to-end MVP that runs on the **Flare Coston2 Testnet
 
 ### 1. Working End-to-End TEE Integration
 - **The Problem:** We initially encountered `UnauthorizedCaller` errors from the smart contract, and the provided docker-based TEE local simulation failed to start due to missing image dependencies (`local/tee-proxy`).
-- **The Solution:** We engineered a lightweight Node.js `mock-tee.js` server that correctly simulates the TEE environment. It receives the private data, computes the score, and critically, **signs the payload using the deployer's private key**. This successfully satisfied the `CredRegistry.sol` contract's ECDSA signature verification, allowing us to mint scores on-chain exactly as a production TEE would.
-
+- **The Solution (Honest Architecture):** For the scope of this hackathon demo, the TEE runs as a local Node.js signer (`mock-tee.js`). It accurately simulates ingesting private data and running the scoring algorithm. Crucially, the resulting score is **ECDSA-verified on-chain by CredRegistry**. To ensure the trust model remains mathematically sound, the mock TEE uses a **dedicated signing key completely separate from the contract deployer**, enforcing the rule that only the enclave identity can mint scores.
 ### 2. Modern Scrolling UI Overhaul
 - **The Problem:** The initial dashboard was a dense, basic two-column layout that felt cramped and unpolished.
 - **The Solution:** We completely transformed the application into a sleek, premium Web3 experience!

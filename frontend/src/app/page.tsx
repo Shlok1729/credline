@@ -203,13 +203,12 @@ export default function Home() {
             <Zap size={14} /> Coston2 Testnet Live
           </div>
           <h1>
-            Privacy-Preserving<br />
-            <span className="gradient-text">Credit &amp; Lending</span>
+            Turn a 180% collateral requirement into 120%<br />
+            <span className="gradient-text">— without showing anyone your bank statement.</span>
           </h1>
           <p className="hero-subtitle">
-            Your on-chain history is scored privately inside a Trusted Execution
-            Environment. Only the resulting credential is written on-chain — unlocking
-            better DeFi borrowing terms.
+            Powered by Flare Confidential Compute. Your private financial history is scored inside a secure Trusted Execution
+            Environment. Only the final score is verified on-chain, unlocking capital-efficient DeFi borrowing.
           </p>
 
           {!isConnected && (
