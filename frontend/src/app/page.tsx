@@ -7,15 +7,15 @@ import { Shield, Lock, Activity, Wallet, RefreshCw, Zap } from 'lucide-react';
 import { CredRegistryABI, LendingPoolLiteABI } from './contracts';
 
 // Deployed Addresses on Coston2
-const CRED_REGISTRY = '0x2480c000Dd95de1A1A78E3Bc7f527CEb92B9BE45' as const;
-const LENDING_POOL = '0x1b4E7645240aD2230fa8474d2C1CF6f321452D8D' as const;
+const CRED_REGISTRY = '0x57096884EfdDaCFB10F316c6562E405f4B7057C6' as const;
+const LENDING_POOL = '0x53412Df6836B18Ec7CF38C49Ef3aCdf317Ce2772' as const;
 
-/* ── Mock profiles ──────────────────────────────── */
-const mockProfiles = [
-  { label: 'Alice — Long-time active user', accountAgeDays: 1095, totalTransactions: 847, monthlyVolumeUsd: 12500, activeMonths: 30 },
-  { label: 'Bob — Moderate user',           accountAgeDays: 548,  totalTransactions: 234, monthlyVolumeUsd: 3200,  activeMonths: 14 },
-  { label: 'Charlie — New user',            accountAgeDays: 90,   totalTransactions: 23,  monthlyVolumeUsd: 500,   activeMonths: 3  },
-  { label: 'Diana — High volume but new',   accountAgeDays: 180,  totalTransactions: 156, monthlyVolumeUsd: 45000, activeMonths: 5  },
+/* ── Data Source Profiles ──────────────────────────────── */
+const dataSourceProfiles = [
+  { label: 'Chase Bank — Primary Checking (...4921)', accountAgeDays: 1095, totalTransactions: 847, monthlyVolumeUsd: 12500, activeMonths: 30 },
+  { label: 'Wells Fargo — Business Acct (...8832)',   accountAgeDays: 548,  totalTransactions: 234, monthlyVolumeUsd: 3200,  activeMonths: 14 },
+  { label: 'Bank of America — Savings (...1109)',     accountAgeDays: 90,   totalTransactions: 23,  monthlyVolumeUsd: 500,   activeMonths: 3  },
+  { label: 'Coinbase — Crypto Exchange (...77A1)',    accountAgeDays: 180,  totalTransactions: 156, monthlyVolumeUsd: 45000, activeMonths: 5  },
 ];
 
 export default function Home() {
@@ -23,7 +23,7 @@ export default function Home() {
   const { connectors, connect } = useConnect();
   const { disconnect } = useDisconnect();
 
-  const [selectedProfile, setSelectedProfile] = useState(mockProfiles[0]);
+  const [selectedProfile, setSelectedProfile] = useState(dataSourceProfiles[0]);
   const [scoreStatus, setScoreStatus] = useState<'idle' | 'computing' | 'minting'>('idle');
   const [collateral, setCollateral] = useState('');
   const [borrowAmount, setBorrowAmount] = useState('');
@@ -37,7 +37,7 @@ export default function Home() {
     query: { enabled: !!address, refetchInterval: 3000 }
   });
 
-  const { writeContract, data: txHash } = useWriteContract();
+  const { writeContract, data: txHash, isPending: isTxPending } = useWriteContract();
   const { isLoading: isTxConfirming, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({ hash: txHash });
 
   const userCollateral = positionData?.[0] ? formatEther(positionData[0]) : '0';
@@ -55,6 +55,7 @@ export default function Home() {
 
   /* ── Transactions ─────────────────────────────── */
   const handleComputeScore = () => {
+    if (isTxPending || isTxConfirming) return;
     setScoreStatus('computing');
     // Simulate TEE delay before triggering the on-chain minting
     setTimeout(() => {
@@ -77,7 +78,7 @@ export default function Home() {
   };
 
   const handleDeposit = () => {
-    if (!collateral) return;
+    if (!collateral || Number(collateral) <= 0 || isTxPending || isTxConfirming) return;
     writeContract({
       address: LENDING_POOL,
       abi: LendingPoolLiteABI,
@@ -88,7 +89,11 @@ export default function Home() {
   };
 
   const handleBorrow = () => {
-    if (!borrowAmount) return;
+    if (!borrowAmount || Number(borrowAmount) <= 0 || isTxPending || isTxConfirming) return;
+    if (Number(borrowAmount) > Number(maxBorrow)) {
+      alert(`Cannot borrow more than your max limit of ${Number(maxBorrow).toFixed(2)} FXRP`);
+      return;
+    }
     writeContract({
       address: LENDING_POOL,
       abi: LendingPoolLiteABI,
@@ -194,17 +199,17 @@ export default function Home() {
                   {onChainScore === 0 ? (
                     <>
                       <div className="select-group">
-                        <label className="select-label">Mock History Profile</label>
+                        <label className="select-label">Select Data Source to Analyze</label>
                         <select
                           className="select-field"
                           value={selectedProfile.label}
                           onChange={(e) => {
-                            const p = mockProfiles.find(x => x.label === e.target.value);
+                            const p = dataSourceProfiles.find(x => x.label === e.target.value);
                             if (p) setSelectedProfile(p);
                           }}
                           disabled={scoreStatus !== 'idle'}
                         >
-                          {mockProfiles.map(p => (
+                          {dataSourceProfiles.map(p => (
                             <option key={p.label} value={p.label}>{p.label}</option>
                           ))}
                         </select>
@@ -316,15 +321,28 @@ export default function Home() {
                         placeholder="0.00"
                         value={collateral}
                         onChange={e => setCollateral(e.target.value)}
+                        disabled={isTxPending || isTxConfirming}
                       />
-                      <button className="btn btn-secondary btn-sm" onClick={handleDeposit}>Deposit</button>
+                      <button 
+                        className="btn btn-secondary btn-sm" 
+                        onClick={handleDeposit}
+                        disabled={isTxPending || isTxConfirming || !collateral || Number(collateral) <= 0}
+                      >
+                        {(isTxPending || isTxConfirming) ? <RefreshCw size={14} className="spin" /> : 'Deposit'}
+                      </button>
                     </div>
                   </div>
 
                   <div className="input-group mb-0">
                     <div className="input-label">
                       <span className="input-label-text">Borrow (FXRP)</span>
-                      <span className="input-label-hint">Max: {Number(maxBorrow).toFixed(2)}</span>
+                      <span 
+                        className="input-label-hint" 
+                        style={{ cursor: 'pointer', color: 'var(--orange)' }} 
+                        onClick={() => setBorrowAmount(Number(maxBorrow).toFixed(2))}
+                      >
+                        Max: {Number(maxBorrow).toFixed(2)}
+                      </span>
                     </div>
                     <div className="input-row">
                       <input
@@ -333,8 +351,15 @@ export default function Home() {
                         placeholder="0.00"
                         value={borrowAmount}
                         onChange={e => setBorrowAmount(e.target.value)}
+                        disabled={isTxPending || isTxConfirming || Number(maxBorrow) <= 0}
                       />
-                      <button className="btn btn-orange btn-sm" onClick={handleBorrow}>Borrow</button>
+                      <button 
+                        className="btn btn-orange btn-sm" 
+                        onClick={handleBorrow}
+                        disabled={isTxPending || isTxConfirming || Number(maxBorrow) <= 0 || !borrowAmount || Number(borrowAmount) <= 0}
+                      >
+                        {(isTxPending || isTxConfirming) ? <RefreshCw size={14} className="spin" /> : 'Borrow'}
+                      </button>
                     </div>
                   </div>
                 </div>

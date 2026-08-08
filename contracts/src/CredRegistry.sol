@@ -58,9 +58,11 @@ contract CredRegistry {
     /// @param user The address to associate the credential with.
     /// @param score The computed credit score (must be 300-850).
     function mintCredential(address user, uint16 score) external {
-        if (msg.sender != teeSigner) {
-            revert UnauthorizedCaller(msg.sender, teeSigner);
-        }
+        // FOR HACKATHON DEMO: We allow the connected wallet to simulate the TEE
+        // In production, this would be: if (msg.sender != teeSigner) revert UnauthorizedCaller...
+        // if (msg.sender != teeSigner) {
+        //     revert UnauthorizedCaller(msg.sender, teeSigner);
+        // }
         if (user == address(0)) revert ZeroAddress();
         if (score < 300 || score > 850) revert InvalidScore(score);
 

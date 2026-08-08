@@ -21,7 +21,7 @@ contract Deploy is Script {
         // the TEE extension is deployed and registered.
         address teeSigner = vm.envOr("TEE_SIGNER", vm.addr(vm.envUint("PRIVATE_KEY")));
 
-        vm.startBroadcast();
+        vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
 
         // 1. Deploy MockFXRP (for demo — production would use real FXRP)
         MockFXRP mockFxrp = new MockFXRP();
