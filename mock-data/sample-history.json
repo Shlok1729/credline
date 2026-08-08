@@ -1,0 +1,36 @@
+{
+  "users": [
+    {
+      "label": "Alice — Long-time active user (Excellent tier)",
+      "userAddress": "0x0000000000000000000000000000000000000001",
+      "accountAgeDays": 1095,
+      "totalTransactions": 847,
+      "monthlyVolumeUsd": 12500,
+      "activeMonths": 30
+    },
+    {
+      "label": "Bob — Moderate user (Good tier)",
+      "userAddress": "0x0000000000000000000000000000000000000002",
+      "accountAgeDays": 548,
+      "totalTransactions": 234,
+      "monthlyVolumeUsd": 3200,
+      "activeMonths": 14
+    },
+    {
+      "label": "Charlie — New user (Standard tier)",
+      "userAddress": "0x0000000000000000000000000000000000000003",
+      "accountAgeDays": 90,
+      "totalTransactions": 23,
+      "monthlyVolumeUsd": 500,
+      "activeMonths": 3
+    },
+    {
+      "label": "Diana — High volume but new (Fair tier)",
+      "userAddress": "0x0000000000000000000000000000000000000004",
+      "accountAgeDays": 180,
+      "totalTransactions": 156,
+      "monthlyVolumeUsd": 45000,
+      "activeMonths": 5
+    }
+  ]
+}
