@@ -196,7 +196,7 @@ h1, h2, h3, h4, h5, h6 {
 .page-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 4rem 2rem 5rem;
+  padding: 0 2rem 5rem;
   flex-grow: 1;
   animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -209,7 +209,60 @@ h1, h2, h3, h4, h5, h6 {
 /* ─── Hero Section ──────────────────────────────── */
 .hero {
   text-align: center;
-  margin-bottom: 4rem;
+  min-height: 35vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 2rem;
+  margin-top: 1rem;
+}
+
+/* ─── Scroll Reveal Animations ──────────────────── */
+/* Native CSS Scroll-Driven Animations */
+@media (prefers-reduced-motion: no-preference) {
+  @supports ((animation-timeline: view()) and (animation-range: entry)) {
+    @keyframes scrollFadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(60px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .scroll-reveal {
+      animation: scrollFadeUp auto cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-timeline: view(block);
+      animation-range: entry 5% cover 15%;
+    }
+    
+    /* Disable JS fallback if native is supported */
+    .scroll-reveal-hidden {
+      opacity: auto !important;
+      transform: none !important;
+    }
+  }
+}
+
+/* JS Fallback Classes (for Firefox / older browsers) */
+.scroll-reveal-hidden {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scroll-reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── Layout Spacing ────────────────────────────── */
+.section-spacing {
+  margin-bottom: 3rem;
+  width: 100%;
 }
 
 .hero-badge {

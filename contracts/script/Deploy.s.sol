@@ -39,9 +39,9 @@ contract Deploy is Script {
         // 4. Fund the pool with initial liquidity (Wrap C2FLR into WNat)
         // Note: The deployer needs C2FLR to do this!
         IWNat wnat = IWNat(wnatAddress);
-        wnat.deposit{value: 50 ether}();
-        wnat.transfer(address(pool), 50 ether);
-        console.log("Pool funded with 50 WNat");
+        wnat.deposit{value: 10 ether}();
+        wnat.transfer(address(pool), 10 ether);
+        console.log("Pool funded with 10 WNat");
 
         vm.stopBroadcast();
 

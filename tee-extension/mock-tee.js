@@ -7,8 +7,8 @@ app.use(cors());
 app.use(express.json());
 
 // This is the private key of the TEE Signer registered in CredRegistry!
-// It matches the deployer's wallet address that we used for coston2 deployment.
-const TEE_PRIVATE_KEY = "0x3bb9684ddec05d7be9aff5f3482bbbb6294ff6b0e585701d6d9419ca93078991";
+// We generated a fresh wallet specifically for this TEE to separate it from the deployer.
+const TEE_PRIVATE_KEY = "0x2880fc9777adcd46fcae0a0aa73aef4d06cc443492a5fbe4080a3a3643f5496f";
 const wallet = new ethers.Wallet(TEE_PRIVATE_KEY);
 
 app.post("/direct", async (req, res) => {
