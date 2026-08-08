@@ -1,10 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
-import {
-  Shield, Lock, Activity, Wallet, RefreshCw, CheckCircle, Zap
-} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useAccount, useConnect, useDisconnect, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { parseEther, formatEther } from 'viem';
+import { Shield, Lock, Activity, Wallet, RefreshCw, Zap } from 'lucide-react';
+import { CredRegistryABI, LendingPoolLiteABI } from './contracts';
+
+// Deployed Addresses on Coston2
+const CRED_REGISTRY = '0x2480c000Dd95de1A1A78E3Bc7f527CEb92B9BE45' as const;
+const LENDING_POOL = '0x1b4E7645240aD2230fa8474d2C1CF6f321452D8D' as const;
 
 /* ── Mock profiles ──────────────────────────────── */
 const mockProfiles = [
@@ -20,39 +24,86 @@ export default function Home() {
   const { disconnect } = useDisconnect();
 
   const [selectedProfile, setSelectedProfile] = useState(mockProfiles[0]);
-  const [scoreStatus, setScoreStatus] = useState<'idle' | 'computing' | 'minting' | 'done'>('idle');
-  const [score, setScore] = useState<{ tier: string; value: number } | null>(null);
+  const [scoreStatus, setScoreStatus] = useState<'idle' | 'computing' | 'minting'>('idle');
   const [collateral, setCollateral] = useState('');
   const [borrowAmount, setBorrowAmount] = useState('');
 
-  /* ── Score simulation ─────────────────────────── */
+  // Wagmi Hooks for On-Chain Data
+  const { data: positionData, refetch: refetchPosition } = useReadContract({
+    address: LENDING_POOL,
+    abi: LendingPoolLiteABI,
+    functionName: 'getPosition',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address, refetchInterval: 3000 }
+  });
+
+  const { writeContract, data: txHash } = useWriteContract();
+  const { isLoading: isTxConfirming, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({ hash: txHash });
+
+  const userCollateral = positionData?.[0] ? formatEther(positionData[0]) : '0';
+  const userBorrowed = positionData?.[1] ? formatEther(positionData[1]) : '0';
+  const maxBorrow = positionData?.[2] ? formatEther(positionData[2]) : '0';
+  const onChainScore = positionData?.[3] ?? 0;
+  const onChainTier = positionData?.[4] ?? 'None (Standard)';
+
+  // Reset status if score appears on-chain
+  useEffect(() => {
+    if (onChainScore > 0 && scoreStatus !== 'idle') {
+      setScoreStatus('idle');
+    }
+  }, [onChainScore, scoreStatus]);
+
+  /* ── Transactions ─────────────────────────────── */
   const handleComputeScore = () => {
     setScoreStatus('computing');
+    // Simulate TEE delay before triggering the on-chain minting
     setTimeout(() => {
       setScoreStatus('minting');
-      setTimeout(() => {
-        const p = selectedProfile;
-        let val = 550, tier = 'Standard';
-        if (p.accountAgeDays > 1000)        { val = 820; tier = 'Excellent'; }
-        else if (p.accountAgeDays > 500)    { val = 710; tier = 'Good'; }
-        else if (p.monthlyVolumeUsd > 10000){ val = 680; tier = 'Fair'; }
-        setScore({ value: val, tier });
-        setScoreStatus('done');
-      }, 3000);
-    }, 4000);
+      
+      const p = selectedProfile;
+      let val = 550; // Standard
+      if (p.accountAgeDays > 1000)        val = 820; // Excellent
+      else if (p.accountAgeDays > 500)    val = 710; // Good
+      else if (p.monthlyVolumeUsd > 10000) val = 680; // Fair
+
+      // The frontend wallet acts as the TEE Signer for this demo
+      writeContract({
+        address: CRED_REGISTRY,
+        abi: CredRegistryABI,
+        functionName: 'mintCredential',
+        args: [address as `0x${string}`, val],
+      });
+    }, 2000);
+  };
+
+  const handleDeposit = () => {
+    if (!collateral) return;
+    writeContract({
+      address: LENDING_POOL,
+      abi: LendingPoolLiteABI,
+      functionName: 'deposit',
+      value: parseEther(collateral),
+    });
+    setCollateral('');
+  };
+
+  const handleBorrow = () => {
+    if (!borrowAmount) return;
+    writeContract({
+      address: LENDING_POOL,
+      abi: LendingPoolLiteABI,
+      functionName: 'borrow',
+      args: [parseEther(borrowAmount)],
+    });
+    setBorrowAmount('');
   };
 
   const tierClass = (t: string) =>
     t === 'Excellent' ? 'excellent' : t === 'Good' ? 'good' : 'standard';
 
-  const currentStep = scoreStatus === 'idle' ? 1
-    : scoreStatus === 'computing' ? 2
-    : scoreStatus === 'minting' ? 3
-    : 4;
-
+  const currentStep = !isConnected ? 1 : (onChainScore > 0 ? 4 : (scoreStatus !== 'idle' ? 3 : 2));
   const addr = address ? `${address.slice(0, 6)}…${address.slice(-4)}` : '';
 
-  /* ─────────────────────────────────────────────── */
   return (
     <>
       {/* ── Navbar ──────────────────────────────── */}
@@ -73,11 +124,9 @@ export default function Home() {
 
       {/* ── Page ────────────────────────────────── */}
       <div className="page-container">
-
-        {/* Hero */}
         <section className="hero">
           <div className="hero-badge">
-            <Zap size={12} /> Flare Confidential Compute
+            <Zap size={12} /> Coston2 Testnet Live
           </div>
           <h1>
             Privacy-Preserving<br />
@@ -91,41 +140,39 @@ export default function Home() {
         </section>
 
         {!isConnected ? (
-          /* ── Connect Wallet ─────────────────────── */
           <div className="connect-card">
             <div className="connect-icon">
               <Wallet size={32} />
             </div>
             <h2>Connect Wallet</h2>
-            <p>Link your MetaMask to Coston2 testnet to begin the privacy-preserving scoring flow.</p>
+            <p>Link your MetaMask to Coston2 testnet to begin.</p>
             <button
               className="btn btn-primary full-width"
               onClick={() => connect({ connector: connectors[0] })}
             >
-              <Wallet size={18} />
-              Connect MetaMask
+              <Wallet size={18} /> Connect MetaMask
             </button>
           </div>
         ) : (
           <>
             {/* ── Step Progress Bar ──────────────── */}
             <div className="steps-bar">
-              <div className={`step-item ${currentStep >= 1 ? (currentStep > 1 ? 'done' : 'active') : ''}`}>
+              <div className={`step-item ${currentStep > 1 ? 'done' : 'active'}`}>
                 <div className="step-number">{currentStep > 1 ? '✓' : '1'}</div>
                 <span className="step-text">Connect</span>
               </div>
               <div className={`step-line ${currentStep > 1 ? 'done' : ''}`} />
-              <div className={`step-item ${currentStep >= 2 ? (currentStep > 2 ? 'done' : 'active') : ''}`}>
+              <div className={`step-item ${currentStep > 2 ? 'done' : (currentStep === 2 ? 'active' : '')}`}>
                 <div className="step-number">{currentStep > 2 ? '✓' : '2'}</div>
                 <span className="step-text">TEE Compute</span>
               </div>
               <div className={`step-line ${currentStep > 2 ? 'done' : ''}`} />
-              <div className={`step-item ${currentStep >= 3 ? (currentStep > 3 ? 'done' : 'active') : ''}`}>
+              <div className={`step-item ${currentStep > 3 ? 'done' : (currentStep === 3 ? 'active' : '')}`}>
                 <div className="step-number">{currentStep > 3 ? '✓' : '3'}</div>
                 <span className="step-text">Mint Credential</span>
               </div>
               <div className={`step-line ${currentStep > 3 ? 'done' : ''}`} />
-              <div className={`step-item ${currentStep >= 4 ? 'active' : ''}`}>
+              <div className={`step-item ${currentStep === 4 ? 'active' : ''}`}>
                 <div className="step-number">4</div>
                 <span className="step-text">Borrow</span>
               </div>
@@ -142,84 +189,75 @@ export default function Home() {
                     </div>
                     <span className="card-title">Identity &amp; Score</span>
                   </div>
-                  <button className="btn-ghost" onClick={() => disconnect()}>Disconnect</button>
                 </div>
                 <div className="card-body">
-                  {/* Profile picker */}
-                  <div className="select-group">
-                    <label className="select-label">Mock History Profile</label>
-                    <select
-                      className="select-field"
-                      value={selectedProfile.label}
-                      onChange={(e) => {
-                        const p = mockProfiles.find(x => x.label === e.target.value);
-                        if (p) setSelectedProfile(p);
-                        setScoreStatus('idle');
-                        setScore(null);
-                      }}
-                      disabled={scoreStatus !== 'idle'}
-                    >
-                      {mockProfiles.map(p => (
-                        <option key={p.label} value={p.label}>{p.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Private data */}
-                  <div className="private-panel">
-                    <div className="private-label">
-                      <Lock size={10} /> Private inputs — never touch the chain
-                    </div>
-                    <div className="private-grid">
-                      <div className="private-item">
-                        <div className="private-item-label">Account Age</div>
-                        <div className="private-item-value">{selectedProfile.accountAgeDays} days</div>
+                  {onChainScore === 0 ? (
+                    <>
+                      <div className="select-group">
+                        <label className="select-label">Mock History Profile</label>
+                        <select
+                          className="select-field"
+                          value={selectedProfile.label}
+                          onChange={(e) => {
+                            const p = mockProfiles.find(x => x.label === e.target.value);
+                            if (p) setSelectedProfile(p);
+                          }}
+                          disabled={scoreStatus !== 'idle'}
+                        >
+                          {mockProfiles.map(p => (
+                            <option key={p.label} value={p.label}>{p.label}</option>
+                          ))}
+                        </select>
                       </div>
-                      <div className="private-item">
-                        <div className="private-item-label">Tx Count</div>
-                        <div className="private-item-value">{selectedProfile.totalTransactions.toLocaleString()}</div>
+
+                      <div className="private-panel">
+                        <div className="private-label">
+                          <Lock size={10} /> Private inputs
+                        </div>
+                        <div className="private-grid">
+                          <div className="private-item">
+                            <div className="private-item-label">Account Age</div>
+                            <div className="private-item-value">{selectedProfile.accountAgeDays} days</div>
+                          </div>
+                          <div className="private-item">
+                            <div className="private-item-label">Tx Count</div>
+                            <div className="private-item-value">{selectedProfile.totalTransactions}</div>
+                          </div>
+                          <div className="private-item">
+                            <div className="private-item-label">Monthly Vol</div>
+                            <div className="private-item-value">${selectedProfile.monthlyVolumeUsd}</div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="private-item">
-                        <div className="private-item-label">Monthly Vol</div>
-                        <div className="private-item-value">${selectedProfile.monthlyVolumeUsd.toLocaleString()}</div>
-                      </div>
-                      <div className="private-item">
-                        <div className="private-item-label">Active Months</div>
-                        <div className="private-item-value">{selectedProfile.activeMonths}</div>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Action / status */}
-                  {scoreStatus === 'idle' && (
-                    <button className="btn btn-primary full-width" onClick={handleComputeScore}>
-                      <Lock size={16} /> Compute Score in TEE
-                    </button>
-                  )}
+                      {scoreStatus === 'idle' && (
+                        <button className="btn btn-primary full-width" onClick={handleComputeScore}>
+                          <Lock size={16} /> Compute Score in TEE
+                        </button>
+                      )}
 
-                  {scoreStatus === 'computing' && (
-                    <div className="tee-status computing">
-                      <div className="tee-icon spin"><RefreshCw size={28} color="var(--accent)" /></div>
-                      <div className="tee-title">TEE Enclave Processing…</div>
-                      <div className="tee-subtitle">Analyzing data privately. Raw inputs will be destroyed.</div>
-                    </div>
-                  )}
+                      {scoreStatus === 'computing' && (
+                        <div className="tee-status computing">
+                          <div className="tee-icon spin"><RefreshCw size={28} color="var(--accent)" /></div>
+                          <div className="tee-title">TEE Enclave Processing…</div>
+                        </div>
+                      )}
 
-                  {scoreStatus === 'minting' && (
-                    <div className="tee-status minting">
-                      <div className="tee-icon pulse"><Activity size={28} color="var(--warning)" /></div>
-                      <div className="tee-title">Minting On-Chain Credential…</div>
-                      <div className="tee-subtitle">Signing result and broadcasting to Coston2.</div>
-                    </div>
-                  )}
-
-                  {scoreStatus === 'done' && score && (
+                      {scoreStatus === 'minting' && (
+                        <div className="tee-status minting">
+                          <div className="tee-icon pulse"><Activity size={28} color="var(--warning)" /></div>
+                          <div className="tee-title">Sign Transaction</div>
+                          <div className="tee-subtitle">Please approve the wallet popup to mint the score on-chain.</div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
                     <div className="score-result">
-                      <div className="score-number">{score.value}</div>
-                      <div className={`score-tier ${tierClass(score.tier)}`}>{score.tier} Tier</div>
+                      <div className="score-number">{onChainScore}</div>
+                      <div className={`score-tier ${tierClass(onChainTier)}`}>{onChainTier} Tier</div>
                       <div className="score-badge">
                         <span className="score-badge-dot" />
-                        Verified by Flare TEE
+                        Verified On-Chain
                       </div>
                     </div>
                   )}
@@ -237,30 +275,36 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="card-body">
-                  {/* Terms */}
                   <div className="terms-panel">
-                    <div className="terms-header">Your Lending Terms</div>
+                    <div className="terms-header">Your Live On-Chain Terms</div>
                     <div className="terms-row">
                       <span className="terms-label">Score Tier</span>
-                      <span className={`terms-value ${score ? 'improved' : ''}`}>
-                        {score ? score.tier : 'None (Standard)'}
-                      </span>
+                      <span className={`terms-value ${onChainScore > 0 ? 'improved' : ''}`}>{onChainTier}</span>
                     </div>
                     <div className="terms-row">
                       <span className="terms-label">Required Collateral</span>
-                      <span className={`terms-value ${score?.tier === 'Excellent' || score?.tier === 'Good' ? 'improved' : ''}`}>
-                        {score?.tier === 'Excellent' ? '120%' : score?.tier === 'Good' ? '140%' : '180%'}
+                      <span className={`terms-value ${onChainTier === 'Excellent' || onChainTier === 'Good' ? 'improved' : ''}`}>
+                        {onChainTier === 'Excellent' ? '120%' : onChainTier === 'Good' ? '140%' : '180%'}
                       </span>
                     </div>
-                    <div className="terms-row">
-                      <span className="terms-label">Borrow Multiplier</span>
-                      <span className={`terms-value ${score?.tier === 'Excellent' || score?.tier === 'Good' ? 'improved' : ''}`}>
-                        {score?.tier === 'Excellent' ? '2.0×' : score?.tier === 'Good' ? '1.5×' : '1.0×'}
-                      </span>
+                    <div className="terms-row" style={{ flexDirection: 'column', alignItems: 'flex-start', background: 'rgba(0,0,0,0.2)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '4px' }}>
+                        <span className="terms-label">Deposited</span>
+                        <span className="terms-value">{Number(userCollateral).toFixed(2)} C2FLR</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                        <span className="terms-label">Borrowed</span>
+                        <span className="terms-value">{Number(userBorrowed).toFixed(2)} FXRP</span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Deposit */}
+                  {isTxConfirming && (
+                    <div className="tee-status computing" style={{ marginBottom: '1rem', padding: '1rem' }}>
+                      Waiting for blockchain confirmation...
+                    </div>
+                  )}
+
                   <div className="input-group">
                     <div className="input-label">
                       <span className="input-label-text">Deposit Collateral (C2FLR)</span>
@@ -273,15 +317,14 @@ export default function Home() {
                         value={collateral}
                         onChange={e => setCollateral(e.target.value)}
                       />
-                      <button className="btn btn-secondary btn-sm">Deposit</button>
+                      <button className="btn btn-secondary btn-sm" onClick={handleDeposit}>Deposit</button>
                     </div>
                   </div>
 
-                  {/* Borrow */}
                   <div className="input-group mb-0">
                     <div className="input-label">
                       <span className="input-label-text">Borrow (FXRP)</span>
-                      <span className="input-label-hint">Max: —</span>
+                      <span className="input-label-hint">Max: {Number(maxBorrow).toFixed(2)}</span>
                     </div>
                     <div className="input-row">
                       <input
@@ -291,7 +334,7 @@ export default function Home() {
                         value={borrowAmount}
                         onChange={e => setBorrowAmount(e.target.value)}
                       />
-                      <button className="btn btn-orange btn-sm">Borrow</button>
+                      <button className="btn btn-orange btn-sm" onClick={handleBorrow}>Borrow</button>
                     </div>
                   </div>
                 </div>
@@ -301,12 +344,8 @@ export default function Home() {
         )}
       </div>
 
-      {/* ── Footer ──────────────────────────────── */}
       <footer className="footer">
-        <p className="footer-text">
-          Built for the Flare Summer Signal Hackathon · Powered by{' '}
-          <span className="footer-brand">Flare Confidential Compute</span>
-        </p>
+        <p className="footer-text">Built for the Flare Summer Signal Hackathon</p>
       </footer>
     </>
   );
