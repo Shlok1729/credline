@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAccount, useConnect, useDisconnect, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { parseEther, formatEther } from 'viem';
-import { Shield, Lock, Activity, Wallet, RefreshCw, Zap } from 'lucide-react';
+import { Shield, Lock, Activity, Wallet, RefreshCw, Zap, ExternalLink } from 'lucide-react';
 import { CredRegistryABI, LendingPoolLiteABI } from './contracts';
 
 // Deployed Addresses on Coston2
@@ -27,6 +27,7 @@ export default function Home() {
   const [scoreStatus, setScoreStatus] = useState<'idle' | 'computing' | 'minting'>('idle');
   const [collateral, setCollateral] = useState('');
   const [borrowAmount, setBorrowAmount] = useState('');
+  const [showSuccessGlow, setShowSuccessGlow] = useState(false);
 
   // Wagmi Hooks for On-Chain Data
   const { data: positionData, refetch: refetchPosition } = useReadContract({
@@ -50,6 +51,9 @@ export default function Home() {
   useEffect(() => {
     if (onChainScore > 0 && scoreStatus !== 'idle') {
       setScoreStatus('idle');
+      // Trigger success glow animation
+      setShowSuccessGlow(true);
+      setTimeout(() => setShowSuccessGlow(false), 2000); // Remove class after 2 seconds
     }
   }, [onChainScore, scoreStatus]);
 
@@ -259,7 +263,7 @@ export default function Home() {
             <section className="section-spacing scroll-reveal scroll-reveal-hidden">
               <div className="dashboard-grid">
                 {/* IDENTITY & SCORE CARD */}
-                <div className="card">
+                <div className={`card ${showSuccessGlow ? 'success-burst' : ''}`}>
                   <div className="card-header">
                     <div className="card-header-left">
                       <div className="card-header-icon pink">
@@ -338,6 +342,16 @@ export default function Home() {
                           <span className="score-badge-dot" />
                           Verified On-Chain via TEE
                         </div>
+                        {txHash && isTxSuccess && (
+                          <a 
+                            href={`https://coston2-explorer.flare.network/tx/${txHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="explorer-link"
+                          >
+                            View on Coston2 Explorer <ExternalLink size={14} />
+                          </a>
+                        )}
                       </div>
                     )}
                   </div>
@@ -363,7 +377,16 @@ export default function Home() {
                       <div className="terms-row">
                         <span className="terms-label">Required Collateral</span>
                         <span className={`terms-value ${onChainTier === 'Excellent' || onChainTier === 'Good' ? 'improved' : ''}`}>
-                          {onChainTier === 'Excellent' ? '120%' : onChainTier === 'Good' ? '140%' : '180%'}
+                          {onChainScore > 0 && (
+                            <span className="old-collateral">180%</span>
+                          )}
+                          {onChainScore > 0 ? (
+                            <span className="collateral-drop-anim">
+                              {onChainTier === 'Excellent' ? '120%' : onChainTier === 'Good' ? '140%' : '180%'}
+                            </span>
+                          ) : (
+                            <span>180%</span>
+                          )}
                         </span>
                       </div>
                       
