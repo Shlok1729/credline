@@ -4,28 +4,28 @@ pragma solidity ^0.8.27;
 import "forge-std/Script.sol";
 import { CredRegistry } from "../src/CredRegistry.sol";
 import { LendingPoolLite } from "../src/LendingPoolLite.sol";
-import { MockFXRP } from "../src/MockFXRP.sol";
+import { IERC20 } from "../src/interfaces/IERC20.sol";
+
+interface IFlareContractRegistry {
+    function getContractAddressByName(string memory _name) external view returns (address);
+}
+
+interface IWNat is IERC20 {
+    function deposit() external payable;
+}
 
 /// @title Deploy
 /// @notice Deploys all CredLine contracts to Coston2 testnet.
-/// @dev Usage:
-///   forge script script/Deploy.s.sol:Deploy \
-///     --rpc-url coston2 \
-///     --private-key $PRIVATE_KEY \
-///     --broadcast \
-///     -vvvv
 contract Deploy is Script {
     function run() external {
-        // The TEE signer address — this is the address of the registered TEE machine
-        // that will call mintCredential(). Set this to the actual TEE signer after
-        // the TEE extension is deployed and registered.
         address teeSigner = vm.envOr("TEE_SIGNER", vm.addr(vm.envUint("PRIVATE_KEY")));
 
         vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
 
-        // 1. Deploy MockFXRP (for demo — production would use real FXRP)
-        MockFXRP mockFxrp = new MockFXRP();
-        console.log("MockFXRP deployed at:", address(mockFxrp));
+        // 1. Fetch real Coston2 WNat via FlareContractRegistry
+        IFlareContractRegistry registry = IFlareContractRegistry(0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019);
+        address wnatAddress = registry.getContractAddressByName("WNat");
+        console.log("Dynamically fetched WNat from FlareContractRegistry at:", wnatAddress);
 
         // 2. Deploy CredRegistry
         CredRegistry credRegistry = new CredRegistry(teeSigner);
@@ -33,12 +33,15 @@ contract Deploy is Script {
         console.log("  TEE signer:", teeSigner);
 
         // 3. Deploy LendingPoolLite
-        LendingPoolLite pool = new LendingPoolLite(address(credRegistry), address(mockFxrp));
+        LendingPoolLite pool = new LendingPoolLite(address(credRegistry), wnatAddress);
         console.log("LendingPoolLite deployed at:", address(pool));
 
-        // 4. Fund the pool with initial liquidity (50,000 mFXRP)
-        mockFxrp.mint(address(pool), 50_000 * 1e18);
-        console.log("Pool funded with 50,000 mFXRP");
+        // 4. Fund the pool with initial liquidity (Wrap C2FLR into WNat)
+        // Note: The deployer needs C2FLR to do this!
+        IWNat wnat = IWNat(wnatAddress);
+        wnat.deposit{value: 50 ether}();
+        wnat.transfer(address(pool), 50 ether);
+        console.log("Pool funded with 50 WNat");
 
         vm.stopBroadcast();
 
@@ -46,14 +49,10 @@ contract Deploy is Script {
         console.log("");
         console.log("=== CredLine Deployment Summary ===");
         console.log("Network: Coston2 Testnet");
-        console.log("MockFXRP:        ", address(mockFxrp));
-        console.log("CredRegistry:    ", address(credRegistry));
-        console.log("LendingPoolLite: ", address(pool));
-        console.log("TEE Signer:      ", teeSigner);
+        console.log("WNat (Borrow Token): ", wnatAddress);
+        console.log("CredRegistry:        ", address(credRegistry));
+        console.log("LendingPoolLite:     ", address(pool));
+        console.log("TEE Signer:          ", teeSigner);
         console.log("");
-        console.log("Next steps:");
-        console.log("  1. Deploy & register TEE extension (tee-extension/)");
-        console.log("  2. Update TEE_SIGNER env to match registered TEE address");
-        console.log("  3. Re-deploy CredRegistry if TEE signer address differs");
     }
 }

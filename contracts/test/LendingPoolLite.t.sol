@@ -4,7 +4,8 @@ pragma solidity ^0.8.27;
 import "forge-std/Test.sol";
 import { LendingPoolLite } from "../src/LendingPoolLite.sol";
 import { CredRegistry } from "../src/CredRegistry.sol";
-import { MockFXRP } from "../src/MockFXRP.sol";
+import { MockFXRP } from "./MockFXRP.sol";
+import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 contract LendingPoolLiteTest is Test {
     LendingPoolLite public pool;
@@ -12,11 +13,12 @@ contract LendingPoolLiteTest is Test {
     MockFXRP public fxrp;
 
     address public teeSigner;
+    uint256 public teeSignerPk;
     address public user1;
     address public user2;
 
     function setUp() public {
-        teeSigner = makeAddr("teeSigner");
+        (teeSigner, teeSignerPk) = makeAddrAndKey("teeSigner");
         user1 = makeAddr("user1");
         user2 = makeAddr("user2");
 
@@ -30,7 +32,15 @@ contract LendingPoolLiteTest is Test {
 
         // Give users some ETH for collateral
         vm.deal(user1, 300 ether);
+        vm.deal(user1, 300 ether);
         vm.deal(user2, 300 ether);
+    }
+
+    function _sign(bytes memory resultData) internal view returns (bytes memory) {
+        bytes32 messageHash = keccak256(resultData);
+        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(teeSignerPk, ethSignedMessageHash);
+        return abi.encodePacked(r, s, v);
     }
 
     // ── Deposit Tests ──────────────────────────────────────────
@@ -81,8 +91,8 @@ contract LendingPoolLiteTest is Test {
 
     function test_borrow_excellentTerms() public {
         // Give user1 an excellent score
-        vm.prank(teeSigner);
-        registry.mintCredential(user1, 800);
+        bytes memory data = bytes('{"score":800}');
+        registry.mintCredentialWithSignature(data, _sign(data), user1, 800);
 
         (uint256 ratio, , string memory tier) = pool.getTerms(user1);
         assertEq(ratio, 12000); // 120%
@@ -92,8 +102,8 @@ contract LendingPoolLiteTest is Test {
     // ── Borrow Tests — Good Terms ──────────────────────────────
 
     function test_borrow_goodTerms() public {
-        vm.prank(teeSigner);
-        registry.mintCredential(user1, 700);
+        bytes memory data = bytes('{"score":700}');
+        registry.mintCredentialWithSignature(data, _sign(data), user1, 700);
 
         (uint256 ratio, , string memory tier) = pool.getTerms(user1);
         assertEq(ratio, 14000); // 140%
@@ -103,8 +113,8 @@ contract LendingPoolLiteTest is Test {
     // ── Borrow Tests — Score Boundary ──────────────────────────
 
     function test_borrow_scoreBoundary_750() public {
-        vm.prank(teeSigner);
-        registry.mintCredential(user1, 750);
+        bytes memory data = bytes('{"score":750}');
+        registry.mintCredentialWithSignature(data, _sign(data), user1, 750);
 
         (uint256 ratio, , string memory tier) = pool.getTerms(user1);
         assertEq(ratio, 12000); // Exactly 750 = Excellent
@@ -112,8 +122,8 @@ contract LendingPoolLiteTest is Test {
     }
 
     function test_borrow_scoreBoundary_650() public {
-        vm.prank(teeSigner);
-        registry.mintCredential(user1, 650);
+        bytes memory data = bytes('{"score":650}');
+        registry.mintCredentialWithSignature(data, _sign(data), user1, 650);
 
         (uint256 ratio, , string memory tier) = pool.getTerms(user1);
         assertEq(ratio, 14000); // Exactly 650 = Good
@@ -121,8 +131,8 @@ contract LendingPoolLiteTest is Test {
     }
 
     function test_borrow_scoreBoundary_649() public {
-        vm.prank(teeSigner);
-        registry.mintCredential(user1, 649);
+        bytes memory data = bytes('{"score":649}');
+        registry.mintCredentialWithSignature(data, _sign(data), user1, 649);
 
         (uint256 ratio, , string memory tier) = pool.getTerms(user1);
         assertEq(ratio, 18000); // 649 = Standard
@@ -183,8 +193,8 @@ contract LendingPoolLiteTest is Test {
     // ── getPosition Tests ──────────────────────────────────────
 
     function test_getPosition_withCredential() public {
-        vm.prank(teeSigner);
-        registry.mintCredential(user1, 800);
+        bytes memory data = bytes('{"score":800}');
+        registry.mintCredentialWithSignature(data, _sign(data), user1, 800);
 
         vm.prank(user1);
         pool.deposit{value: 10 ether}();
@@ -212,8 +222,8 @@ contract LendingPoolLiteTest is Test {
         assertEq(tierBefore, "Standard");
 
         // After: user gets excellent score
-        vm.prank(teeSigner);
-        registry.mintCredential(user1, 790);
+        bytes memory data = bytes('{"score":790}');
+        registry.mintCredentialWithSignature(data, _sign(data), user1, 790);
 
         (uint256 ratioAfter, , string memory tierAfter) = pool.getTerms(user1);
         assertEq(ratioAfter, 12000);

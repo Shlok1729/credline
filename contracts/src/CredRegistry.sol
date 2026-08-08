@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+
 /// @title CredRegistry
 /// @author CredLine Team (Flare Summer Signal Hackathon)
 /// @notice On-chain credential registry that stores privacy-preserving credit scores.
@@ -51,19 +54,31 @@ contract CredRegistry {
 
     // ─── External Functions ────────────────────────────────────
 
-    /// @notice Mint or update a credential for a user.
-    /// @dev Callable ONLY by the registered TEE signer address.
-    ///      This enforces that scores can only be written by the TEE service,
-    ///      mirroring the FCC access-control pattern.
-    /// @param user The address to associate the credential with.
-    /// @param score The computed credit score (must be 300-850).
-    function mintCredential(address user, uint16 score) external {
-        // FOR HACKATHON DEMO: We allow the connected wallet to simulate the TEE
-        // In production, this would be: if (msg.sender != teeSigner) revert UnauthorizedCaller...
-        // if (msg.sender != teeSigner) {
-        //     revert UnauthorizedCaller(msg.sender, teeSigner);
-        // }
+    /// @notice Mint or update a credential for a user using a TEE signature.
+    /// @dev The TEE processes the private data and returns a JSON response:
+    ///      {"userAddress":"0x...","score":750,"tier":"Excellent"}
+    ///      It signs this raw JSON string payload. We verify the signature here.
+    /// @param resultData The exact JSON bytes returned by the TEE.
+    /// @param signature The ECDSA signature produced by the TEE proxy.
+    /// @param user The user address (passed explicitly to avoid parsing JSON in Solidity).
+    /// @param score The computed credit score.
+    function mintCredentialWithSignature(
+        bytes calldata resultData,
+        bytes calldata signature,
+        address user,
+        uint16 score
+    ) external {
         if (user == address(0)) revert ZeroAddress();
+        if (score < 300 || score > 850) revert InvalidScore(score);
+
+        // Reconstruct the message hash and recover the signer
+        bytes32 messageHash = keccak256(resultData);
+        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
+        address recoveredSigner = ECDSA.recover(ethSignedMessageHash, signature);
+
+        if (recoveredSigner != teeSigner) {
+            revert UnauthorizedCaller(recoveredSigner, teeSigner);
+        }
         if (score < 300 || score > 850) revert InvalidScore(score);
 
         bool isNew = scores[user] == 0;

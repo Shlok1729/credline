@@ -1,0 +1,14 @@
+=========================================
+🚀 Flare Local TEE Proxy is running!
+Listening on http://localhost:6674
+=========================================
+Ready to sign private computations...
+🔒 [TEE] Received private computation request:
+{
+  userAddress: '0xce87347E5BD547D7541384d32939cC603651cA69',
+  accountAgeDays: 1095,
+  totalTransactions: 847,
+  monthlyVolumeUsd: 12500
+}
+✅ [TEE] Computed Credit Score: 850
+✍️  [TEE] Signed result: 0x5bf1c7f8198dcc44641e6b8a97e3da4d181eba923e18af793bf5f8437514aaf62a1faf68344864682d5ada636b0fc2da5005d038fdb4b7d7b88ec4b8223f377f1c

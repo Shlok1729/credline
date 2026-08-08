@@ -3,15 +3,17 @@ pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 import { CredRegistry } from "../src/CredRegistry.sol";
+import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 contract CredRegistryTest is Test {
     CredRegistry public registry;
     address public teeSigner;
+    uint256 public teeSignerPk;
     address public user1;
     address public user2;
 
     function setUp() public {
-        teeSigner = makeAddr("teeSigner");
+        (teeSigner, teeSignerPk) = makeAddrAndKey("teeSigner");
         user1 = makeAddr("user1");
         user2 = makeAddr("user2");
         registry = new CredRegistry(teeSigner);
@@ -32,11 +34,20 @@ contract CredRegistryTest is Test {
         new CredRegistry(address(0));
     }
 
+    // ── Helper ──────────────────────────────────────────────────
+    
+    function _sign(bytes memory resultData) internal view returns (bytes memory) {
+        bytes32 messageHash = keccak256(resultData);
+        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(teeSignerPk, ethSignedMessageHash);
+        return abi.encodePacked(r, s, v);
+    }
+
     // ── mintCredential Tests ───────────────────────────────────
 
     function test_mintCredential_success() public {
-        vm.prank(teeSigner);
-        registry.mintCredential(user1, 720);
+        bytes memory data = bytes('{"userAddress":"0x00...","score":720,"tier":"Good"}');
+        registry.mintCredentialWithSignature(data, _sign(data), user1, 720);
 
         assertEq(registry.getScore(user1), 720);
         assertTrue(registry.hasCredential(user1));
@@ -44,17 +55,18 @@ contract CredRegistryTest is Test {
     }
 
     function test_mintCredential_emitsEvent() public {
-        vm.prank(teeSigner);
+        bytes memory data = bytes('{"userAddress":"0x00...","score":720,"tier":"Good"}');
         vm.expectEmit(true, false, false, true);
         emit CredRegistry.CredentialMinted(user1, 720, block.timestamp);
-        registry.mintCredential(user1, 720);
+        registry.mintCredentialWithSignature(data, _sign(data), user1, 720);
     }
 
     function test_mintCredential_updatesExisting() public {
-        vm.startPrank(teeSigner);
-        registry.mintCredential(user1, 600);
-        registry.mintCredential(user1, 780);
-        vm.stopPrank();
+        bytes memory data1 = bytes('{"score":600}');
+        registry.mintCredentialWithSignature(data1, _sign(data1), user1, 600);
+        
+        bytes memory data2 = bytes('{"score":780}');
+        registry.mintCredentialWithSignature(data2, _sign(data2), user1, 780);
 
         assertEq(registry.getScore(user1), 780);
         // totalCredentials should not double-count
@@ -62,10 +74,11 @@ contract CredRegistryTest is Test {
     }
 
     function test_mintCredential_multipleUsers() public {
-        vm.startPrank(teeSigner);
-        registry.mintCredential(user1, 720);
-        registry.mintCredential(user2, 550);
-        vm.stopPrank();
+        bytes memory data1 = bytes('{"score":720}');
+        registry.mintCredentialWithSignature(data1, _sign(data1), user1, 720);
+        
+        bytes memory data2 = bytes('{"score":550}');
+        registry.mintCredentialWithSignature(data2, _sign(data2), user2, 550);
 
         assertEq(registry.getScore(user1), 720);
         assertEq(registry.getScore(user2), 550);
@@ -73,29 +86,32 @@ contract CredRegistryTest is Test {
     }
 
     function test_mintCredential_revertsOnUnauthorizedCaller() public {
-        vm.prank(user1);
-        vm.expectRevert(
-            abi.encodeWithSelector(CredRegistry.UnauthorizedCaller.selector, user1, teeSigner)
-        );
-        registry.mintCredential(user1, 720);
+        bytes memory data = bytes('fake');
+        (, uint256 fakePk) = makeAddrAndKey("fake");
+        bytes32 hash = MessageHashUtils.toEthSignedMessageHash(keccak256(data));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(fakePk, hash);
+        bytes memory fakeSig = abi.encodePacked(r, s, v);
+
+        vm.expectRevert(); // unauthorized
+        registry.mintCredentialWithSignature(data, fakeSig, user1, 720);
     }
 
     function test_mintCredential_revertsOnScoreTooLow() public {
-        vm.prank(teeSigner);
+        bytes memory data = bytes('{"score":299}');
         vm.expectRevert(abi.encodeWithSelector(CredRegistry.InvalidScore.selector, 299));
-        registry.mintCredential(user1, 299);
+        registry.mintCredentialWithSignature(data, _sign(data), user1, 299);
     }
 
     function test_mintCredential_revertsOnScoreTooHigh() public {
-        vm.prank(teeSigner);
+        bytes memory data = bytes('{"score":851}');
         vm.expectRevert(abi.encodeWithSelector(CredRegistry.InvalidScore.selector, 851));
-        registry.mintCredential(user1, 851);
+        registry.mintCredentialWithSignature(data, _sign(data), user1, 851);
     }
 
     function test_mintCredential_revertsOnZeroUser() public {
-        vm.prank(teeSigner);
+        bytes memory data = bytes('{"score":720}');
         vm.expectRevert(CredRegistry.ZeroAddress.selector);
-        registry.mintCredential(address(0), 720);
+        registry.mintCredentialWithSignature(data, _sign(data), address(0), 720);
     }
 
     // ── View Function Tests ────────────────────────────────────
@@ -109,32 +125,32 @@ contract CredRegistryTest is Test {
     }
 
     function test_getTier_excellent() public {
-        vm.prank(teeSigner);
-        registry.mintCredential(user1, 800);
+        bytes memory data = bytes('{"score":800}');
+        registry.mintCredentialWithSignature(data, _sign(data), user1, 800);
         assertEq(registry.getTier(user1), "Excellent");
     }
 
     function test_getTier_good() public {
-        vm.prank(teeSigner);
-        registry.mintCredential(user1, 720);
+        bytes memory data = bytes('{"score":720}');
+        registry.mintCredentialWithSignature(data, _sign(data), user1, 720);
         assertEq(registry.getTier(user1), "Good");
     }
 
     function test_getTier_fair() public {
-        vm.prank(teeSigner);
-        registry.mintCredential(user1, 670);
+        bytes memory data = bytes('{"score":670}');
+        registry.mintCredentialWithSignature(data, _sign(data), user1, 670);
         assertEq(registry.getTier(user1), "Fair");
     }
 
     function test_getTier_belowAverage() public {
-        vm.prank(teeSigner);
-        registry.mintCredential(user1, 580);
+        bytes memory data = bytes('{"score":580}');
+        registry.mintCredentialWithSignature(data, _sign(data), user1, 580);
         assertEq(registry.getTier(user1), "Below Average");
     }
 
     function test_getTier_poor() public {
-        vm.prank(teeSigner);
-        registry.mintCredential(user1, 350);
+        bytes memory data = bytes('{"score":350}');
+        registry.mintCredentialWithSignature(data, _sign(data), user1, 350);
         assertEq(registry.getTier(user1), "Poor");
     }
 
@@ -145,14 +161,14 @@ contract CredRegistryTest is Test {
     // ── Boundary Tests ─────────────────────────────────────────
 
     function test_mintCredential_minScore() public {
-        vm.prank(teeSigner);
-        registry.mintCredential(user1, 300);
+        bytes memory data = bytes('{"score":300}');
+        registry.mintCredentialWithSignature(data, _sign(data), user1, 300);
         assertEq(registry.getScore(user1), 300);
     }
 
     function test_mintCredential_maxScore() public {
-        vm.prank(teeSigner);
-        registry.mintCredential(user1, 850);
+        bytes memory data = bytes('{"score":850}');
+        registry.mintCredentialWithSignature(data, _sign(data), user1, 850);
         assertEq(registry.getScore(user1), 850);
     }
 }

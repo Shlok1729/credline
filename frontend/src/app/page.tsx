@@ -7,8 +7,8 @@ import { Shield, Lock, Activity, Wallet, RefreshCw, Zap } from 'lucide-react';
 import { CredRegistryABI, LendingPoolLiteABI } from './contracts';
 
 // Deployed Addresses on Coston2
-const CRED_REGISTRY = '0x57096884EfdDaCFB10F316c6562E405f4B7057C6' as const;
-const LENDING_POOL = '0x53412Df6836B18Ec7CF38C49Ef3aCdf317Ce2772' as const;
+const CRED_REGISTRY = '0xa7E1f6E25f8fFAb0532c09170bb1066c1B8d14f0' as const;
+const LENDING_POOL = '0xA3F05568fE422024838e4eDdBA03EcA272F68303' as const;
 
 /* ── Data Source Profiles ──────────────────────────────── */
 const dataSourceProfiles = [
@@ -54,27 +54,61 @@ export default function Home() {
   }, [onChainScore, scoreStatus]);
 
   /* ── Transactions ─────────────────────────────── */
-  const handleComputeScore = () => {
-    if (isTxPending || isTxConfirming) return;
+  const handleComputeScore = async () => {
+    if (isTxPending || isTxConfirming || !address) return;
     setScoreStatus('computing');
-    // Simulate TEE delay before triggering the on-chain minting
-    setTimeout(() => {
+    
+    try {
+      // 1. Send raw data to local TEE Enclave proxy (MODE=0 simulation)
+      const res = await fetch('http://localhost:6674/direct', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+           userAddress: address,
+           accountAgeDays: selectedProfile.accountAgeDays,
+           totalTransactions: selectedProfile.totalTransactions,
+           monthlyVolumeUsd: selectedProfile.monthlyVolumeUsd
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to reach TEE Proxy. Is Docker running?");
+      }
+      const teeResponse = await res.json();
+      
+      // Extract data and signature from the proxy's response
+      const resultData = teeResponse.data || teeResponse.result?.data || teeResponse.resultData;
+      const signature = teeResponse.signature || teeResponse.result?.signature;
+      
+      if (!resultData || !signature) {
+        throw new Error("Invalid response from TEE Enclave: missing data or signature");
+      }
+      
+      // Decode the score from the original JSON payload returned inside resultData
+      // The Go enclave returns JSON bytes. In JS, we parse it to get the score.
+      // (The smart contract will just verify the hash of the raw bytes)
+      const decodedJsonString = Buffer.from(resultData.replace('0x', ''), 'hex').toString('utf8');
+      const parsedData = JSON.parse(decodedJsonString);
+
       setScoreStatus('minting');
       
-      const p = selectedProfile;
-      let val = 550; // Standard
-      if (p.accountAgeDays > 1000)        val = 820; // Excellent
-      else if (p.accountAgeDays > 500)    val = 710; // Good
-      else if (p.monthlyVolumeUsd > 10000) val = 680; // Fair
-
-      // The frontend wallet acts as the TEE Signer for this demo
+      // 2. Submit the TEE-signed result to the blockchain
       writeContract({
         address: CRED_REGISTRY,
         abi: CredRegistryABI,
-        functionName: 'mintCredential',
-        args: [address as `0x${string}`, val],
+        functionName: 'mintCredentialWithSignature',
+        args: [
+          resultData as `0x${string}`, 
+          signature as `0x${string}`, 
+          address as `0x${string}`, 
+          parsedData.score
+        ],
       });
-    }, 2000);
+    } catch (err: any) {
+      console.error(err);
+      alert(`TEE Compute Error: ${err.message}. Make sure you ran 'docker compose up -d' in tee-extension!`);
+      setScoreStatus('idle');
+    }
   };
 
   const handleDeposit = () => {
@@ -91,7 +125,7 @@ export default function Home() {
   const handleBorrow = () => {
     if (!borrowAmount || Number(borrowAmount) <= 0 || isTxPending || isTxConfirming) return;
     if (Number(borrowAmount) > Number(maxBorrow)) {
-      alert(`Cannot borrow more than your max limit of ${Number(maxBorrow).toFixed(2)} FXRP`);
+      alert(`Cannot borrow more than your max limit of ${Number(maxBorrow).toFixed(2)} WNat`);
       return;
     }
     writeContract({
@@ -119,10 +153,19 @@ export default function Home() {
             <span className="logo-text">CredLine</span>
           </div>
           {isConnected && (
-            <button className="wallet-chip" onClick={() => disconnect()}>
-              <span className="wallet-dot" />
-              {addr}
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button className="wallet-chip" onClick={() => {
+                setScoreStatus('idle');
+                setCollateral('');
+                setBorrowAmount('');
+              }} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+                <RefreshCw size={14} /> Reset Demo
+              </button>
+              <button className="wallet-chip" onClick={() => disconnect()}>
+                <span className="wallet-dot" />
+                {addr}
+              </button>
+            </div>
           )}
         </div>
       </nav>
@@ -299,7 +342,7 @@ export default function Home() {
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
                         <span className="terms-label">Borrowed</span>
-                        <span className="terms-value">{Number(userBorrowed).toFixed(2)} FXRP</span>
+                        <span className="terms-value">{Number(userBorrowed).toFixed(2)} WNat</span>
                       </div>
                     </div>
                   </div>
@@ -335,7 +378,7 @@ export default function Home() {
 
                   <div className="input-group mb-0">
                     <div className="input-label">
-                      <span className="input-label-text">Borrow (FXRP)</span>
+                      <span className="input-label-text">Borrow (WNat)</span>
                       <span 
                         className="input-label-hint" 
                         style={{ cursor: 'pointer', color: 'var(--orange)' }} 
@@ -351,12 +394,12 @@ export default function Home() {
                         placeholder="0.00"
                         value={borrowAmount}
                         onChange={e => setBorrowAmount(e.target.value)}
-                        disabled={isTxPending || isTxConfirming || Number(maxBorrow) <= 0}
+                        disabled={isTxPending || isTxConfirming || Number(maxBorrow) < 0.01}
                       />
                       <button 
                         className="btn btn-orange btn-sm" 
                         onClick={handleBorrow}
-                        disabled={isTxPending || isTxConfirming || Number(maxBorrow) <= 0 || !borrowAmount || Number(borrowAmount) <= 0}
+                        disabled={isTxPending || isTxConfirming || Number(maxBorrow) < 0.01 || !borrowAmount || Number(borrowAmount) <= 0}
                       >
                         {(isTxPending || isTxConfirming) ? <RefreshCw size={14} className="spin" /> : 'Borrow'}
                       </button>
