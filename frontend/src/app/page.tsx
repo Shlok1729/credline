@@ -5,6 +5,7 @@ import { useAccount, useConnect, useDisconnect, useReadContract, useWriteContrac
 import { parseEther, formatEther } from 'viem';
 import { Shield, Lock, Activity, Wallet, RefreshCw, Zap, ExternalLink } from 'lucide-react';
 import { CredRegistryABI, LendingPoolLiteABI } from './contracts';
+import StrokeText from '../components/StrokeText';
 
 // Deployed Addresses on Coston2
 const CRED_REGISTRY = '0x76d2788D3915B48d4F066a2902e29ECCAfac19dC' as const;
@@ -202,9 +203,34 @@ export default function Home() {
           <div className="hero-badge">
             <Zap size={14} /> Coston2 Testnet Live
           </div>
-          <h1>
-            Turn a 180% collateral requirement into 120%<br />
-            <span className="gradient-text">— without showing anyone your bank statement.</span>
+          <h1 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <StrokeText
+              text="Turn 180% collateral into 120%"
+              strokeColor="#FF2E93"
+              fillColor="#FFFFFF"
+              strokeWidth={1.5}
+              drawDuration={1.6}
+              fillDelay={0.2}
+              stagger={0.05}
+              ease="power2.out"
+              trigger="mount"
+              fillMode="wipe"
+              fontSize={64}
+              fontWeight={800}
+              letterSpacing={-2}
+              reverse={false}
+              style={{ maxWidth: '1000px', margin: '0 auto' }}
+            />
+            <span className="gradient-text" style={{ 
+              fontSize: '2.25rem', 
+              fontWeight: 600,
+              marginTop: '1rem',
+              letterSpacing: '-0.02em',
+              textShadow: '0 0 30px rgba(255, 46, 147, 0.4)',
+              lineHeight: 1.2
+            }}>
+              — without showing anyone your bank statement.
+            </span>
           </h1>
           <p className="hero-subtitle">
             Powered by Flare Confidential Compute. Your private financial history is scored inside a secure Trusted Execution
