@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useAccount, useConnect, useDisconnect, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { parseEther, formatEther } from 'viem';
 import { Shield, Lock, Activity, Wallet, RefreshCw, Zap, ExternalLink } from 'lucide-react';
@@ -187,10 +188,12 @@ export default function Home() {
         colors={['#B497CF', '#5227FF']}
         logoUrl=""
         logoNode={
-          <div className="logo" style={{ cursor: 'pointer' }}>
-            <div className="logo-icon">C</div>
-            <div className="logo-text">CredLine</div>
-          </div>
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <div className="logo" style={{ cursor: 'pointer' }}>
+              <div className="logo-icon">C</div>
+              <div className="logo-text">CredLine</div>
+            </div>
+          </Link>
         }
         accentColor="#5227FF"
         customContent={
@@ -407,6 +410,9 @@ export default function Home() {
                         <div className="score-badge">
                           <span className="score-badge-dot" />
                           Verified On-Chain via TEE
+                        </div>
+                        <div style={{ marginTop: '1.25rem', padding: '0.5rem 1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', fontSize: '0.875rem', color: 'var(--text-muted)', display: 'inline-block' }}>
+                          Profile: <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{selectedProfile.label}</strong>
                         </div>
                         {txHash && isTxSuccess && (
                           <a

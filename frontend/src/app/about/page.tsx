@@ -2,6 +2,7 @@
 
 import { useAccount, useDisconnect } from 'wagmi';
 import StaggeredMenu from '../../components/StaggeredMenu';
+import StrokeText from '../../components/StrokeText';
 import { RefreshCw, Lock, Zap } from 'lucide-react';
 import Link from 'next/link';
 
@@ -26,10 +27,12 @@ export default function AboutPage() {
         colors={['#B497CF', '#5227FF']}
         logoUrl=""
         logoNode={
-          <div className="logo" style={{ cursor: 'pointer' }}>
-            <div className="logo-icon">C</div>
-            <div className="logo-text">CredLine</div>
-          </div>
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <div className="logo" style={{ cursor: 'pointer' }}>
+              <div className="logo-icon">C</div>
+              <div className="logo-text">CredLine</div>
+            </div>
+          </Link>
         }
         accentColor="#5227FF"
         customContent={
@@ -49,17 +52,29 @@ export default function AboutPage() {
         }
       />
 
+
       <div className="page-container scroll-reveal" style={{ paddingTop: '10rem', paddingBottom: '6rem', minHeight: '100vh', maxWidth: '900px', margin: '0 auto', paddingLeft: '2rem', paddingRight: '2rem' }}>
-        
+
         <header style={{ textAlign: 'center', marginBottom: '6rem' }}>
-          <h1 style={{ fontSize: 'clamp(3rem, 6vw, 4.5rem)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1.1, marginBottom: '2rem' }}>
-            <span style={{ color: 'var(--text-secondary)' }}>Welcome to</span><br/>
-            <span style={{ 
-              background: 'linear-gradient(135deg, var(--accent), var(--accent-orange))', 
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              textShadow: '0 0 40px rgba(255, 46, 147, 0.3)'
-            }}>CredLine.</span>
+          <h1 style={{ fontSize: 'clamp(3rem, 6vw, 4.5rem)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1.1, marginBottom: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <span style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Welcome to</span>
+            <StrokeText
+              text="CredLine."
+              strokeColor="#FF2E93"
+              fillColor="#FFFFFF"
+              strokeWidth={1.5}
+              drawDuration={1.6}
+              fillDelay={0.2}
+              stagger={0.05}
+              ease="power2.out"
+              trigger="mount"
+              fillMode="wipe"
+              fontSize={80}
+              fontWeight={800}
+              letterSpacing={-2}
+              reverse={false}
+              style={{ maxWidth: '1000px', margin: '0 auto' }}
+            />
           </h1>
           <p style={{ fontSize: '1.25rem', color: 'var(--text-secondary)', maxWidth: '600px', margin: '0 auto', lineHeight: 1.6 }}>
             The bridge between your real-world financial reputation and trustless, capital-efficient DeFi borrowing.
@@ -67,7 +82,7 @@ export default function AboutPage() {
         </header>
 
         <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2.5rem', marginBottom: '6rem' }}>
-          
+
           <div className="card" style={{ padding: '3rem', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '24px', backdropFilter: 'blur(20px)', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}>
             <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(255, 46, 147, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', marginBottom: '2rem', border: '1px solid rgba(255, 46, 147, 0.2)' }}>
               <Lock size={28} />
@@ -90,31 +105,31 @@ export default function AboutPage() {
 
         </section>
 
-        <section style={{ 
-          background: 'linear-gradient(to bottom right, rgba(255,46,147,0.05), rgba(255,138,0,0.05))', 
-          border: '1px solid rgba(255,255,255,0.05)', 
-          borderRadius: '32px', 
-          padding: '4rem 2rem', 
+        <section style={{
+          background: 'linear-gradient(to bottom right, rgba(255,46,147,0.05), rgba(255,138,0,0.05))',
+          border: '1px solid rgba(255,255,255,0.05)',
+          borderRadius: '32px',
+          padding: '4rem 2rem',
           textAlign: 'center',
           boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
         }}>
           <h2 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '1.5rem', letterSpacing: '-0.02em', color: 'white' }}>How it actually works</h2>
           <div style={{ fontSize: '1.125rem', color: 'var(--text-secondary)', marginBottom: '2.5rem', maxWidth: '600px', margin: '0 auto 3rem', lineHeight: 2, textAlign: 'left' }}>
-            <p><strong style={{color: 'white', marginRight: '0.5rem'}}>1.</strong> You connect your bank or upload statements locally.</p>
-            <p><strong style={{color: 'white', marginRight: '0.5rem'}}>2.</strong> The TEE securely processes the data and generates a <strong style={{color: 'var(--accent-orange)'}}>credit score</strong>.</p>
-            <p><strong style={{color: 'white', marginRight: '0.5rem'}}>3.</strong> The TEE signs the score and mints an ECDSA-verified attestation on-chain.</p>
-            <p><strong style={{color: 'white', marginRight: '0.5rem'}}>4.</strong> Smart contracts read your attestation and instantly lower your collateral ratio.</p>
+            <p><strong style={{ color: 'white', marginRight: '0.5rem' }}>1.</strong> You connect your bank or upload statements locally.</p>
+            <p><strong style={{ color: 'white', marginRight: '0.5rem' }}>2.</strong> The TEE securely processes the data and generates a <strong style={{ color: 'var(--accent-orange)' }}>credit score</strong>.</p>
+            <p><strong style={{ color: 'white', marginRight: '0.5rem' }}>3.</strong> The TEE signs the score and mints an ECDSA-verified attestation on-chain.</p>
+            <p><strong style={{ color: 'white', marginRight: '0.5rem' }}>4.</strong> Smart contracts read your attestation and instantly lower your collateral ratio.</p>
           </div>
-          
+
           <Link href="/" style={{ textDecoration: 'none' }}>
-            <button style={{ 
-              padding: '1.25rem 3rem', 
-              fontSize: '1.125rem', 
-              background: 'linear-gradient(135deg, var(--accent), var(--accent-orange))', 
-              border: 'none', 
-              borderRadius: '16px', 
-              color: '#fff', 
-              fontWeight: 700, 
+            <button style={{
+              padding: '1.25rem 3rem',
+              fontSize: '1.125rem',
+              background: 'linear-gradient(135deg, var(--accent), var(--accent-orange))',
+              border: 'none',
+              borderRadius: '16px',
+              color: '#fff',
+              fontWeight: 700,
               cursor: 'pointer',
               boxShadow: '0 4px 20px rgba(255, 46, 147, 0.4)',
               transition: 'transform 0.2s'
