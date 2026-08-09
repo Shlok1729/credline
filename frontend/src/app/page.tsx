@@ -178,17 +178,21 @@ export default function Home() {
         position="right"
         items={[
           { label: 'Home', ariaLabel: 'Go to home page', link: '/' },
-          { label: 'Borrow', ariaLabel: 'Borrow assets', link: '#borrow' },
-          { label: 'Docs', ariaLabel: 'View documentation', link: '#' },
-          { label: 'Contact', ariaLabel: 'Get in touch', link: '#' }
+          { label: 'About', ariaLabel: 'Learn about us', link: '/about' }
         ]}
         displayItemNumbering={true}
         menuButtonColor="#ffffff"
         openMenuButtonColor="#000000"
         changeMenuColorOnOpen={true}
-        colors={['#FF2E93', '#FF8A00']}
+        colors={['#B497CF', '#5227FF']}
         logoUrl=""
-        accentColor="#FF2E93"
+        logoNode={
+          <div className="logo" style={{ cursor: 'pointer' }}>
+            <div className="logo-icon">C</div>
+            <div className="logo-text">CredLine</div>
+          </div>
+        }
+        accentColor="#5227FF"
         customContent={
           isConnected && address ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
@@ -196,10 +200,10 @@ export default function Home() {
                 setScoreStatus('idle');
                 setCollateral('');
                 setBorrowAmount('');
-              }} style={{ background: 'rgba(20, 20, 25, 0.05)', color: '#000', border: '1px solid rgba(0,0,0,0.1)' }}>
+              }} style={{ background: 'rgba(0, 0, 0, 0.05)', color: '#000', border: '1px solid rgba(0,0,0,0.1)' }}>
                 <RefreshCw size={14} /> Reset Demo
               </button>
-              <button className="wallet-chip" onClick={() => disconnect()} style={{ background: 'rgba(20, 20, 25, 0.05)', color: '#000', border: '1px solid rgba(0,0,0,0.1)' }}>
+              <button className="wallet-chip" onClick={() => disconnect()} style={{ background: 'rgba(0, 0, 0, 0.05)', color: '#000', border: '1px solid rgba(0,0,0,0.1)' }}>
                 <span className="wallet-dot" />
                 {addr}
               </button>
@@ -209,7 +213,7 @@ export default function Home() {
       />
 
       {/* ── Page ────────────────────────────────── */}
-      <div className="page-container">
+      <div className="page-container" style={{ paddingTop: '5rem' }}>
 
         {/* HERO SECTION */}
         <section className="hero">
