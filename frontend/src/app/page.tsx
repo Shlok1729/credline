@@ -28,6 +28,8 @@ export default function Home() {
   const { disconnect } = useDisconnect();
 
   const [selectedProfile, setSelectedProfile] = useState(dataSourceProfiles[0]);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [scoreStatus, setScoreStatus] = useState<'idle' | 'computing' | 'minting'>('idle');
   const [collateral, setCollateral] = useState('');
   const [borrowAmount, setBorrowAmount] = useState('');
@@ -168,7 +170,7 @@ export default function Home() {
   const tierClass = (t: string) =>
     t === 'Excellent' ? 'excellent' : t === 'Good' ? 'good' : 'standard';
 
-  const currentStep = !isConnected ? 1 : (onChainScore > 0 ? 4 : (scoreStatus !== 'idle' ? 3 : 2));
+  const currentStep = (!mounted || !isConnected) ? 1 : (onChainScore > 0 ? 4 : (scoreStatus !== 'idle' ? 3 : 2));
   const addr = address ? `${address.slice(0, 6)}…${address.slice(-4)}` : '';
 
   return (
@@ -197,7 +199,7 @@ export default function Home() {
         }
         accentColor="#5227FF"
         customContent={
-          isConnected && address ? (
+          mounted && isConnected && address ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
               <button className="wallet-chip" onClick={() => {
                 setScoreStatus('idle');
@@ -257,7 +259,7 @@ export default function Home() {
             Environment. Only the final score is verified on-chain, unlocking capital-efficient DeFi borrowing.
           </p>
 
-          {!isConnected && (
+          {(!mounted || !isConnected) && (
             <div className="mt-2" style={{ marginTop: '2.5rem' }}>
               <button
                 className="btn btn-primary"
@@ -269,7 +271,7 @@ export default function Home() {
             </div>
           )}
 
-          {isConnected && (
+          {(mounted && isConnected) && (
             <div className="mt-2" style={{ marginTop: '2.5rem', opacity: 0.6 }}>
               <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Scroll to continue</div>
               <div style={{ width: '2px', height: '40px', background: 'linear-gradient(to bottom, var(--accent), transparent)', margin: '0 auto' }}></div>
@@ -301,7 +303,7 @@ export default function Home() {
           </ScrollExpand>
         </div> */}
 
-        {isConnected && (
+        {(mounted && isConnected) && (
           <>
             {/* PROGRESS BAR SECTION */}
             <section className="section-spacing scroll-reveal scroll-reveal-hidden">

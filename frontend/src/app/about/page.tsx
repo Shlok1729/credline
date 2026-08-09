@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useAccount, useDisconnect } from 'wagmi';
 import StaggeredMenu from '../../components/StaggeredMenu';
 import StrokeText from '../../components/StrokeText';
@@ -10,6 +11,8 @@ export default function AboutPage() {
   const { address, isConnected } = useAccount();
   const { disconnect } = useDisconnect();
   const addr = address ? `${address.slice(0, 6)}…${address.slice(-4)}` : '';
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   return (
     <>
@@ -36,7 +39,7 @@ export default function AboutPage() {
         }
         accentColor="#5227FF"
         customContent={
-          isConnected && address ? (
+          mounted && isConnected && address ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
               <button className="wallet-chip" onClick={() => {
                 // Mock reset action
