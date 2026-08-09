@@ -91,8 +91,8 @@ export default function Home() {
     setScoreStatus('computing');
 
     try {
-      // 1. Send raw data to local TEE Enclave proxy (MODE=0 simulation)
-      const res = await fetch('http://localhost:6674/direct', {
+      // 1. Send raw data to Next.js API Route which acts as our TEE proxy
+      const res = await fetch('/api/tee', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -104,7 +104,7 @@ export default function Home() {
       });
 
       if (!res.ok) {
-        throw new Error("Failed to reach TEE Proxy. Is Docker running?");
+        throw new Error("Failed to reach API route.");
       }
       const teeResponse = await res.json();
 
@@ -136,7 +136,7 @@ export default function Home() {
       });
     } catch (err: any) {
       console.error(err);
-      alert(`TEE Compute Error: ${err.message}. Make sure you ran 'docker compose up -d' in tee-extension!`);
+      alert(`TEE Compute Error: ${err.message}`);
       setScoreStatus('idle');
     }
   };
