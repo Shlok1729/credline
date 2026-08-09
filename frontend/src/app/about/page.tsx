@@ -67,7 +67,7 @@ export default function AboutPage() {
               fillDelay={0.2}
               stagger={0.05}
               ease="power2.out"
-              trigger="mount"
+              trigger="scroll"
               fillMode="wipe"
               fontSize={80}
               fontWeight={800}
