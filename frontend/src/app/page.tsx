@@ -7,6 +7,8 @@ import { Shield, Lock, Activity, Wallet, RefreshCw, Zap, ExternalLink } from 'lu
 import { CredRegistryABI, LendingPoolLiteABI } from './contracts';
 import StrokeText from '../components/StrokeText';
 
+import StaggeredMenu from '../components/StaggeredMenu';
+
 // Deployed Addresses on Coston2
 const CRED_REGISTRY = '0x76d2788D3915B48d4F066a2902e29ECCAfac19dC' as const;
 const LENDING_POOL = '0x8Ab1Ab0D45F2139CBFd3390A60D484629Bb857dd' as const;
@@ -14,9 +16,9 @@ const LENDING_POOL = '0x8Ab1Ab0D45F2139CBFd3390A60D484629Bb857dd' as const;
 /* ── Data Source Profiles ──────────────────────────────── */
 const dataSourceProfiles = [
   { label: 'Chase Bank — Primary Checking (...4921)', accountAgeDays: 1095, totalTransactions: 847, monthlyVolumeUsd: 12500, activeMonths: 30 },
-  { label: 'Wells Fargo — Business Acct (...8832)',   accountAgeDays: 548,  totalTransactions: 234, monthlyVolumeUsd: 3200,  activeMonths: 14 },
-  { label: 'Bank of America — Savings (...1109)',     accountAgeDays: 90,   totalTransactions: 23,  monthlyVolumeUsd: 500,   activeMonths: 3  },
-  { label: 'Coinbase — Crypto Exchange (...77A1)',    accountAgeDays: 180,  totalTransactions: 156, monthlyVolumeUsd: 45000, activeMonths: 5  },
+  { label: 'Wells Fargo — Business Acct (...8832)', accountAgeDays: 548, totalTransactions: 234, monthlyVolumeUsd: 3200, activeMonths: 14 },
+  { label: 'Bank of America — Savings (...1109)', accountAgeDays: 90, totalTransactions: 23, monthlyVolumeUsd: 500, activeMonths: 3 },
+  { label: 'Coinbase — Crypto Exchange (...77A1)', accountAgeDays: 180, totalTransactions: 156, monthlyVolumeUsd: 45000, activeMonths: 5 },
 ];
 
 export default function Home() {
@@ -74,7 +76,7 @@ export default function Home() {
         document.querySelectorAll('.scroll-reveal').forEach((el) => {
           observer.observe(el);
         });
-        
+
         return () => observer.disconnect();
       }
     }
@@ -84,17 +86,17 @@ export default function Home() {
   const handleComputeScore = async () => {
     if (isTxPending || isTxConfirming || !address) return;
     setScoreStatus('computing');
-    
+
     try {
       // 1. Send raw data to local TEE Enclave proxy (MODE=0 simulation)
       const res = await fetch('http://localhost:6674/direct', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-           userAddress: address,
-           accountAgeDays: selectedProfile.accountAgeDays,
-           totalTransactions: selectedProfile.totalTransactions,
-           monthlyVolumeUsd: selectedProfile.monthlyVolumeUsd
+          userAddress: address,
+          accountAgeDays: selectedProfile.accountAgeDays,
+          totalTransactions: selectedProfile.totalTransactions,
+          monthlyVolumeUsd: selectedProfile.monthlyVolumeUsd
         })
       });
 
@@ -102,30 +104,30 @@ export default function Home() {
         throw new Error("Failed to reach TEE Proxy. Is Docker running?");
       }
       const teeResponse = await res.json();
-      
+
       // Extract data and signature from the proxy's response
       const resultData = teeResponse.data || teeResponse.result?.data || teeResponse.resultData;
       const signature = teeResponse.signature || teeResponse.result?.signature;
-      
+
       if (!resultData || !signature) {
         throw new Error("Invalid response from TEE Enclave: missing data or signature");
       }
-      
+
       // Decode the score from the original JSON payload returned inside resultData
       const decodedJsonString = Buffer.from(resultData.replace('0x', ''), 'hex').toString('utf8');
       const parsedData = JSON.parse(decodedJsonString);
 
       setScoreStatus('minting');
-      
+
       // 2. Submit the TEE-signed result to the blockchain
       writeContract({
         address: CRED_REGISTRY,
         abi: CredRegistryABI,
         functionName: 'mintCredentialWithSignature',
         args: [
-          resultData as `0x${string}`, 
-          signature as `0x${string}`, 
-          address as `0x${string}`, 
+          resultData as `0x${string}`,
+          signature as `0x${string}`,
+          address as `0x${string}`,
           parsedData.score
         ],
       });
@@ -170,34 +172,45 @@ export default function Home() {
 
   return (
     <>
-      {/* ── Navbar ──────────────────────────────── */}
-      <nav className="navbar">
-        <div className="navbar-inner">
-          <div className="logo" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <div className="logo-icon">C</div>
-            <span className="logo-text">CredLine</span>
-          </div>
-          {isConnected && (
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
+      {/* ── Fixed UI Elements ─────────────────── */}
+      <StaggeredMenu
+        isFixed={true}
+        position="right"
+        items={[
+          { label: 'Home', ariaLabel: 'Go to home page', link: '/' },
+          { label: 'Borrow', ariaLabel: 'Borrow assets', link: '#borrow' },
+          { label: 'Docs', ariaLabel: 'View documentation', link: '#' },
+          { label: 'Contact', ariaLabel: 'Get in touch', link: '#' }
+        ]}
+        displayItemNumbering={true}
+        menuButtonColor="#ffffff"
+        openMenuButtonColor="#000000"
+        changeMenuColorOnOpen={true}
+        colors={['#FF2E93', '#FF8A00']}
+        logoUrl=""
+        accentColor="#FF2E93"
+        customContent={
+          isConnected && address ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
               <button className="wallet-chip" onClick={() => {
                 setScoreStatus('idle');
                 setCollateral('');
                 setBorrowAmount('');
-              }}>
+              }} style={{ background: 'rgba(20, 20, 25, 0.05)', color: '#000', border: '1px solid rgba(0,0,0,0.1)' }}>
                 <RefreshCw size={14} /> Reset Demo
               </button>
-              <button className="wallet-chip" onClick={() => disconnect()}>
+              <button className="wallet-chip" onClick={() => disconnect()} style={{ background: 'rgba(20, 20, 25, 0.05)', color: '#000', border: '1px solid rgba(0,0,0,0.1)' }}>
                 <span className="wallet-dot" />
                 {addr}
               </button>
             </div>
-          )}
-        </div>
-      </nav>
+          ) : undefined
+        }
+      />
 
       {/* ── Page ────────────────────────────────── */}
       <div className="page-container">
-        
+
         {/* HERO SECTION */}
         <section className="hero">
           <div className="hero-badge">
@@ -221,8 +234,8 @@ export default function Home() {
               reverse={false}
               style={{ maxWidth: '1000px', margin: '0 auto' }}
             />
-            <span className="gradient-text" style={{ 
-              fontSize: '2.25rem', 
+            <span className="gradient-text" style={{
+              fontSize: '2.25rem',
               fontWeight: 600,
               marginTop: '1rem',
               letterSpacing: '-0.02em',
@@ -248,7 +261,7 @@ export default function Home() {
               </button>
             </div>
           )}
-          
+
           {isConnected && (
             <div className="mt-2" style={{ marginTop: '2.5rem', opacity: 0.6 }}>
               <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Scroll to continue</div>
@@ -256,6 +269,30 @@ export default function Home() {
             </div>
           )}
         </section>
+
+        {/* MEDIA SCROLL SHOWCASE */}
+        {/* <div style={{ height: '520px', width: '100%', maxWidth: '1200px', margin: '0 auto 80px' }}>
+          <ScrollExpand
+            src="/hero.jpg"
+            title="Built to scale"
+            alt="Product hero"
+            scrollHint="Scroll inside the frame"
+            useWindowScroll={true}
+            startWidth={42}
+            startHeight={58}
+            startRadius={24}
+            endRadius={0}
+            mediaZoom={1.35}
+            scrollDistance={1.2}
+            holdDistance={0.35}
+            smoothing={0.1}
+            overlayScrim={0.45}
+            enabled={true}
+          >
+            <h2 style={{ fontSize: '3rem', fontWeight: 700, marginBottom: '1rem', color: '#fff' }}>Every pixel, everywhere</h2>
+            <p style={{ fontSize: '1.25rem', color: 'rgba(255,255,255,0.8)' }}>The frame opens up as you scroll and hands the whole stage to your media.</p>
+          </ScrollExpand>
+        </div> */}
 
         {isConnected && (
           <>
@@ -324,7 +361,7 @@ export default function Home() {
                           <div className="private-grid">
                             <div className="private-item">
                               <div className="private-item-label">Account Age</div>
-                              <div className="private-item-value">{selectedProfile.accountAgeDays} <span style={{fontSize:'0.6em', opacity: 0.5}}>days</span></div>
+                              <div className="private-item-value">{selectedProfile.accountAgeDays} <span style={{ fontSize: '0.6em', opacity: 0.5 }}>days</span></div>
                             </div>
                             <div className="private-item">
                               <div className="private-item-label">Tx Count</div>
@@ -368,7 +405,7 @@ export default function Home() {
                           Verified On-Chain via TEE
                         </div>
                         {txHash && isTxSuccess && (
-                          <a 
+                          <a
                             href={`https://coston2-explorer.flare.network/tx/${txHash}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -414,7 +451,7 @@ export default function Home() {
                           )}
                         </span>
                       </div>
-                      
+
                       {/* Position Summary */}
                       <div style={{ background: 'rgba(0,0,0,0.3)', padding: '1.25rem 1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '0.75rem' }}>
@@ -447,8 +484,8 @@ export default function Home() {
                           onChange={e => setCollateral(e.target.value)}
                           disabled={isTxPending || isTxConfirming}
                         />
-                        <button 
-                          className="btn btn-secondary" 
+                        <button
+                          className="btn btn-secondary"
                           onClick={handleDeposit}
                           disabled={isTxPending || isTxConfirming || !collateral || Number(collateral) <= 0}
                         >
@@ -460,9 +497,9 @@ export default function Home() {
                     <div className="input-group mb-0">
                       <div className="input-label">
                         <span className="input-label-text">Borrow (WNat)</span>
-                        <span 
-                          className="input-label-hint" 
-                          style={{ cursor: 'pointer', color: 'var(--accent-orange)' }} 
+                        <span
+                          className="input-label-hint"
+                          style={{ cursor: 'pointer', color: 'var(--accent-orange)' }}
                           onClick={() => setBorrowAmount(Number(maxBorrow).toFixed(2))}
                         >
                           Max Limit: {Number(maxBorrow).toFixed(2)}
@@ -477,8 +514,8 @@ export default function Home() {
                           onChange={e => setBorrowAmount(e.target.value)}
                           disabled={isTxPending || isTxConfirming || Number(maxBorrow) < 0.01}
                         />
-                        <button 
-                          className="btn btn-orange" 
+                        <button
+                          className="btn btn-orange"
                           onClick={handleBorrow}
                           disabled={isTxPending || isTxConfirming || Number(maxBorrow) < 0.01 || !borrowAmount || Number(borrowAmount) <= 0}
                         >
