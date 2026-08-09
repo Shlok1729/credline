@@ -100,7 +100,7 @@ func (e *Extension) processCredit(action teetypes.Action, df *instruction.DataFi
 // SCORING FORMULA (documented for hackathon judges):
 //   base         = 300
 //   age_score    = min(account_age_days / 365 * 100, 150)     → max 150 pts
-//   volume_score = min(log10(monthly_volume + 1) * 50, 200)   → max 200 pts
+//   volume_score = min(log10(monthly_volume + 1) * 33.3, 200) → max 200 pts (caps at ~$1M/mo)
 //   activity     = min(active_months / 12 * 100, 150)         → max 150 pts
 //   consistency  = min(total_transactions / 100 * 50, 50)     → max  50 pts
 //   final_score  = clamp(base + sum, 300, 850)
@@ -165,8 +165,9 @@ func computeCreditScore(req types.ScoreRequest) uint16 {
 	// Age score: up to 150 points
 	ageScore := math.Min(float64(req.AccountAgeDays)/365.0*100.0, 150.0)
 
-	// Volume score: logarithmic scaling, up to 200 points
-	volumeScore := math.Min(math.Log10(req.MonthlyVolumeUSD+1)*50.0, 200.0)
+	// Volume score: logarithmic scaling up to $1,000,000 for max 200 pts
+	// Multiplier = 200 / log10(1,000,000) = 33.3
+	volumeScore := math.Min(math.Log10(req.MonthlyVolumeUSD+1)*33.3, 200.0)
 
 	// Activity score: up to 150 points
 	activityScore := math.Min(float64(req.ActiveMonths)/12.0*100.0, 150.0)
