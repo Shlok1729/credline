@@ -99,7 +99,8 @@ export default function Home() {
           userAddress: address,
           accountAgeDays: selectedProfile.accountAgeDays,
           totalTransactions: selectedProfile.totalTransactions,
-          monthlyVolumeUsd: selectedProfile.monthlyVolumeUsd
+          monthlyVolumeUsd: selectedProfile.monthlyVolumeUsd,
+          activeMonths: selectedProfile.activeMonths
         })
       });
 

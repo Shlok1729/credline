@@ -16,7 +16,7 @@ app.post("/direct", async (req, res) => {
         console.log("🔒 [TEE] Received private computation request:");
         console.log(req.body);
 
-        const { userAddress, accountAgeDays, totalTransactions, monthlyVolumeUsd } = req.body;
+        const { userAddress, accountAgeDays, totalTransactions, monthlyVolumeUsd, activeMonths = 0 } = req.body;
 
         if (!userAddress) {
             throw new Error("Missing userAddress in payload");
@@ -24,10 +24,15 @@ app.post("/direct", async (req, res) => {
 
         // Perform the "Private Computation"
         // This simulates the Go enclave calculating the credit score based on private inputs.
-        let score = 300;
-        if (accountAgeDays > 365) score += 200;
-        if (totalTransactions > 50) score += 200;
-        if (monthlyVolumeUsd > 5000) score += 150;
+        const base = 300;
+        const ageScore = Math.min((accountAgeDays / 365.0) * 100.0, 150.0);
+        const volumeScore = Math.min(Math.log10(monthlyVolumeUsd + 1) * 33.3, 200.0);
+        const activityScore = Math.min((activeMonths / 12.0) * 100.0, 150.0);
+        const consistencyScore = Math.min((totalTransactions / 100.0) * 50.0, 50.0);
+
+        let score = Math.round(base + ageScore + volumeScore + activityScore + consistencyScore);
+        if (score < 300) score = 300;
+        if (score > 850) score = 850;
         
         console.log(`✅ [TEE] Computed Credit Score: ${score}`);
 

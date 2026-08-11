@@ -7,16 +7,21 @@ const wallet = new ethers.Wallet(TEE_PRIVATE_KEY);
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { userAddress, accountAgeDays, totalTransactions, monthlyVolumeUsd } = body;
+    const { userAddress, accountAgeDays, totalTransactions, monthlyVolumeUsd, activeMonths = 0 } = body;
 
     if (!userAddress) {
       return NextResponse.json({ error: "Missing userAddress in payload" }, { status: 400 });
     }
 
-    let score = 300;
-    if (accountAgeDays > 365) score += 200;
-    if (totalTransactions > 50) score += 200;
-    if (monthlyVolumeUsd > 5000) score += 150;
+    const base = 300;
+    const ageScore = Math.min((accountAgeDays / 365.0) * 100.0, 150.0);
+    const volumeScore = Math.min(Math.log10(monthlyVolumeUsd + 1) * 33.3, 200.0);
+    const activityScore = Math.min((activeMonths / 12.0) * 100.0, 150.0);
+    const consistencyScore = Math.min((totalTransactions / 100.0) * 50.0, 50.0);
+
+    let score = Math.round(base + ageScore + volumeScore + activityScore + consistencyScore);
+    if (score < 300) score = 300;
+    if (score > 850) score = 850;
 
     const payloadJson = JSON.stringify({ score });
     const resultBytes = ethers.toUtf8Bytes(payloadJson);
