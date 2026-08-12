@@ -280,29 +280,7 @@ export default function Home() {
           )}
         </section>
 
-        {/* MEDIA SCROLL SHOWCASE */}
-        {/* <div style={{ height: '520px', width: '100%', maxWidth: '1200px', margin: '0 auto 80px' }}>
-          <ScrollExpand
-            src="/hero.jpg"
-            title="Built to scale"
-            alt="Product hero"
-            scrollHint="Scroll inside the frame"
-            useWindowScroll={true}
-            startWidth={42}
-            startHeight={58}
-            startRadius={24}
-            endRadius={0}
-            mediaZoom={1.35}
-            scrollDistance={1.2}
-            holdDistance={0.35}
-            smoothing={0.1}
-            overlayScrim={0.45}
-            enabled={true}
-          >
-            <h2 style={{ fontSize: '3rem', fontWeight: 700, marginBottom: '1rem', color: '#fff' }}>Every pixel, everywhere</h2>
-            <p style={{ fontSize: '1.25rem', color: 'rgba(255,255,255,0.8)' }}>The frame opens up as you scroll and hands the whole stage to your media.</p>
-          </ScrollExpand>
-        </div> */}
+
 
         {(mounted && isConnected) && (
           <>
