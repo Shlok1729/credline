@@ -425,7 +425,15 @@ export default function Home() {
                       <div className="terms-header">Your Live Borrowing Terms</div>
                       <div className="terms-row">
                         <span className="terms-label">Credit Score Tier</span>
-                        <span className={`terms-value ${onChainScore > 0 ? 'improved' : ''}`}>{onChainTier}</span>
+                        <span
+                          className={`terms-value ${onChainScore > 0 ? 'improved' : ''}`}
+                          style={{
+                            color: onChainTier === 'Excellent' ? '#FF2E93' : onChainTier === 'Good' ? '#F59E0B' : '#9CA3AF',
+                            textShadow: onChainTier === 'Excellent' ? '0 0 10px rgba(255,46,147,0.4)' : onChainTier === 'Good' ? '0 0 10px rgba(245,158,11,0.4)' : 'none'
+                          }}
+                        >
+                          {onChainTier}
+                        </span>
                       </div>
                       <div className="terms-row">
                         <span className="terms-label">Required Collateral</span>
@@ -445,14 +453,33 @@ export default function Home() {
 
                       {/* Position Summary */}
                       <div style={{ background: 'rgba(0,0,0,0.3)', padding: '1.25rem 1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '0.75rem' }}>
-                          <span className="terms-label" style={{ fontSize: '0.8125rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Deposited</span>
-                          <span className="terms-value" style={{ color: 'white' }}>{Number(userCollateral).toFixed(2)} C2FLR</span>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                          <span className="terms-label" style={{ fontSize: '0.8125rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Borrowed</span>
-                          <span className="terms-value" style={{ color: 'white' }}>{Number(userBorrowed).toFixed(2)} WNat</span>
-                        </div>
+                        {(() => {
+                          const borrowedNum = Number(userBorrowed);
+                          const maxNum = Number(maxBorrow);
+                          const usagePercent = maxNum > 0 ? (borrowedNum / maxNum) * 100 : 0;
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                                <span className="terms-label" style={{ fontSize: '0.8125rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Borrow Limit</span>
+                                <span className="terms-value" style={{ color: 'white', fontSize: '0.8125rem' }}>
+                                  {borrowedNum.toFixed(2)} <span style={{ opacity: 0.5 }}>/ {maxNum.toFixed(2)} WNat</span>
+                                </span>
+                              </div>
+                              <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                                <div style={{
+                                  height: '100%',
+                                  width: `${Math.min(usagePercent, 100)}%`,
+                                  background: usagePercent > 90 ? '#ef4444' : usagePercent > 70 ? '#F59E0B' : '#FF2E93',
+                                  transition: 'width 0.5s ease-out, background 0.3s ease'
+                                }} />
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginTop: '0.25rem' }}>
+                                <span className="terms-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Deposited</span>
+                                <span className="terms-value" style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.75rem' }}>{Number(userCollateral).toFixed(2)} C2FLR</span>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
 
