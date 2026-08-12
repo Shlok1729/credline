@@ -51,7 +51,7 @@ export default function Home() {
   const userBorrowed = positionData?.[1] ? formatEther(positionData[1]) : '0';
   const maxBorrow = positionData?.[2] ? formatEther(positionData[2]) : '0';
   const onChainScore = positionData?.[3] ?? 0;
-  const onChainTier = positionData?.[4] ?? 'None (Standard)';
+  const onChainTier = positionData?.[4] ?? 'Standard';
 
   // Reset status if score appears on-chain
   useEffect(() => {
