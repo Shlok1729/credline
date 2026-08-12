@@ -84,6 +84,6 @@ While we used a Serverless API mock for the hackathon to bypass infrastructure h
 * **What it is:** A fast, strongly typed, compiled programming language.
 * **How it will be used:** Instead of our Next.js TypeScript API route, the true TEE Enclave logic is written in Go (`tee-extension/go/cmd/main.go`). Go is used because it compiles down to highly efficient binaries that run perfectly inside the Dockerized Confidential Space, processing the credit scoring algorithm with maximum security and speed.
 
-### **The Flare Indexer Database (Coston2 / Mainnet)**
-* **What it is:** A highly available database maintained by Flare that constantly indexes all events happening on the Flare blockchain.
-* **How it will be used:** The TEE Proxy (which sits next to the Go Enclave in Docker) must connect to this database to fetch "Signing Policies." These policies tell the TEE which cryptographic keys are currently valid and authorized by the Flare network. It ensures that the TEE is always in sync with the blockchain's state before it signs a credit score and sends it back to the user.
+### **The Flare Systems Protocol Signing Policy**
+* **What it is:** A permissionless, verifiable on-chain read mechanism.
+* **How it will be used:** Before signing a credit score, the production TEE Proxy verifies the current signing policy against Flare's on-chain Relay contract — the same mechanism Flare's own data providers use to reach consensus. This is a public, permissionless read (no special access required), ensuring the TEE only signs when it's synced with the network's current validator set. We're integrating this via Flare's `tee-relay-client` reference implementation.

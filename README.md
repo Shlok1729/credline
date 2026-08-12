@@ -43,8 +43,8 @@ We have built a complete end-to-end MVP that runs on the **Flare Coston2 Testnet
   - **Standard (<650):** 180% collateral ratio (Default)
 
 ### 2. The TEE Enclave Serverless Proxy
-- **Mock Fallback on Vercel**: Because Flare's Coston2 infrastructure requires explicit indexer DB credentials to run the true Docker TEE proxy in production, we deployed our cryptographic mathematical model natively as a **Next.js Serverless API Route (`/api/tee`)**.
-- This acts as an exact functional simulation of the Go Enclave! It securely ingests private metrics, calculates the logarithmic score, and physically signs the payload with a dedicated ECDSA private key.
+- **Mock Fallback on Vercel**: We deployed our cryptographic mathematical model natively as a **Next.js Serverless API Route (`/api/tee`)**. This acts as an exact functional simulation of the Go Enclave! It securely ingests private metrics, calculates the logarithmic score, and physically signs the payload with a dedicated ECDSA private key.
+- **Production Roadmap**: Before signing a credit score, the production TEE Proxy verifies the current signing policy against Flare's on-chain Relay contract via `tee-relay-client`. This component requires a Flare-run indexer database (currently available to Flare infrastructure partners) — we confirmed this architecture by successfully cloning and reading `tee-relay-client`, and it is the first integration step planned post-hackathon once database access is available.
 - The smart contract (`CredRegistry`) strictly verifies this specific signature, ensuring the architecture remains functionally identical to the real enclave flow!
 
 ### 3. Frontend Web3 Dashboard (Next.js + React)
