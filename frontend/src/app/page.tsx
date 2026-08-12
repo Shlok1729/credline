@@ -44,8 +44,8 @@ export default function Home() {
     query: { enabled: !!address, refetchInterval: 3000 }
   });
 
-  const { writeContract, data: txHash, isPending: isTxPending } = useWriteContract();
-  const { isLoading: isTxConfirming, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({ hash: txHash });
+  const { writeContract, data: txHash, isPending: isTxPending, error: txError, isError: isTxError } = useWriteContract();
+  const { isLoading: isTxConfirming, isSuccess: isTxSuccess, error: confirmError, isError: isConfirmError } = useWaitForTransactionReceipt({ hash: txHash });
 
   const userCollateral = positionData?.[0] ? formatEther(positionData[0]) : '0';
   const userBorrowed = positionData?.[1] ? formatEther(positionData[1]) : '0';
@@ -62,6 +62,13 @@ export default function Home() {
       setTimeout(() => setShowSuccessGlow(false), 2000); // Remove class after 2 seconds
     }
   }, [onChainScore, scoreStatus]);
+
+  // Reset status if transaction fails
+  useEffect(() => {
+    if ((isTxError || isConfirmError) && scoreStatus !== 'idle') {
+      setScoreStatus('idle');
+    }
+  }, [isTxError, isConfirmError, scoreStatus]);
 
   // Scroll Reveal IntersectionObserver Fallback for browsers without native scroll-timeline
   useEffect(() => {
@@ -486,6 +493,13 @@ export default function Home() {
                     {isTxConfirming && (
                       <div className="tee-status computing" style={{ marginBottom: '1.5rem', padding: '1rem', borderRadius: 'var(--radius-sm)' }}>
                         Waiting for blockchain confirmation...
+                      </div>
+                    )}
+
+                    {(isTxError || isConfirmError) && (
+                      <div className="tee-status error" style={{ marginBottom: '1.5rem', padding: '1rem', borderRadius: 'var(--radius-sm)', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', fontSize: '0.875rem' }}>
+                        <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>Transaction Failed</div>
+                        <div style={{ opacity: 0.8 }}>{(txError?.message || confirmError?.message || "An unknown error occurred").split('\n')[0]}</div>
                       </div>
                     )}
 
