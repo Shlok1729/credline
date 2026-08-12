@@ -188,7 +188,7 @@ export default function Home() {
         menuButtonColor="#ffffff"
         openMenuButtonColor="#000000"
         changeMenuColorOnOpen={true}
-        colors={['#B497CF', '#5227FF']}
+        colors={['#FF2E93', '#F97316']}
         logoUrl=""
         logoNode={
           <Link href="/" style={{ textDecoration: 'none' }}>
@@ -198,7 +198,7 @@ export default function Home() {
             </div>
           </Link>
         }
-        accentColor="#5227FF"
+        accentColor="#FF2E93"
         customContent={
           mounted && isConnected && address ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
@@ -452,7 +452,7 @@ export default function Home() {
                       <div className="terms-row">
                         <span className="terms-label">Required Collateral</span>
                         <span className={`terms-value ${onChainTier === 'Excellent' || onChainTier === 'Good' ? 'improved' : ''}`}>
-                          {onChainScore > 0 && (
+                          {onChainScore > 0 && (onChainTier === 'Excellent' || onChainTier === 'Good') && (
                             <span className="old-collateral">180%</span>
                           )}
                           {onChainScore > 0 ? (
