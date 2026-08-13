@@ -513,7 +513,12 @@ export default function Home() {
                           className="input-field"
                           placeholder="0.00"
                           value={collateral}
-                          onChange={e => setCollateral(e.target.value)}
+                          min="0"
+                          onChange={e => {
+                            if (!e.target.value.includes('-')) {
+                              setCollateral(e.target.value);
+                            }
+                          }}
                           disabled={isTxPending || isTxConfirming}
                         />
                         <button
@@ -543,7 +548,12 @@ export default function Home() {
                           className="input-field"
                           placeholder="0.00"
                           value={borrowAmount}
-                          onChange={e => setBorrowAmount(e.target.value)}
+                          min="0"
+                          onChange={e => {
+                            if (!e.target.value.includes('-')) {
+                              setBorrowAmount(e.target.value);
+                            }
+                          }}
                           disabled={isTxPending || isTxConfirming || Number(maxBorrow) < 0.01}
                         />
                         <button
