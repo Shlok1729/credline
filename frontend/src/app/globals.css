@@ -1261,3 +1261,80 @@ h6 {
     opacity: 0.8;
   }
 }
+
+/* ─── Mobile Responsiveness ──────────────────────── */
+@media (max-width: 768px) {
+  .navbar-inner {
+    padding: 1rem;
+  }
+  
+  .page-container {
+    padding: 0 1rem 3rem;
+  }
+  
+  .hero {
+    min-height: 25vh;
+  }
+  
+  .hero h1 {
+    font-size: 2.5rem;
+  }
+  
+  .hero-subtitle {
+    font-size: 1rem;
+    padding: 0 1rem;
+  }
+  
+  .connect-card {
+    padding: 2rem 1.5rem;
+  }
+  
+  .card-header, .card-body {
+    padding: 1.25rem 1rem;
+  }
+  
+  .private-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .input-row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .input-row .btn {
+    width: 100%;
+  }
+
+  .steps-bar {
+    padding: 0;
+  }
+  
+  .step-text {
+    font-size: 0.75rem;
+  }
+  
+  .step-line {
+    margin: 0 0.5rem;
+  }
+  
+  .footer {
+    padding: 2rem 1rem;
+    margin-top: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero h1 {
+    font-size: 2rem;
+  }
+  
+  .score-number {
+    font-size: 3rem;
+  }
+  
+  .tee-status {
+    padding: 1.5rem 1rem;
+  }
+}
