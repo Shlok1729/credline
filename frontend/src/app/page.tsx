@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useAccount, useConnect, useDisconnect, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { parseEther, formatEther } from 'viem';
 import { Shield, Lock, Activity, Wallet, RefreshCw, Zap, ExternalLink } from 'lucide-react';
-import { TEE_SIGNER_ADDRESS, CRED_REGISTRY_ADDRESS, LENDING_POOL_ADDRESS, WNAT_ADDRESS, CredRegistryABI, LendingPoolLiteABI } from './contracts';
+import { CredRegistryABI, LendingPoolLiteABI } from './contracts';
 import AdminRefillButton from '../components/AdminRefillButton';
 import StrokeText from '../components/StrokeText';
 
