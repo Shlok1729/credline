@@ -318,7 +318,6 @@ export default function Home() {
             </section>
 
             {/* MAIN DASHBOARD (Grid) */}
-            <AdminRefillButton />
             <section className="section-spacing scroll-reveal scroll-reveal-hidden">
               <div className="dashboard-grid">
                 {/* IDENTITY & SCORE CARD */}
@@ -414,6 +413,10 @@ export default function Home() {
                             View on Coston2 Explorer <ExternalLink size={14} />
                           </a>
                         )}
+                        
+                        <div style={{ marginTop: '2rem' }}>
+                          <AdminRefillButton />
+                        </div>
                       </div>
                     )}
                   </div>
@@ -505,6 +508,12 @@ export default function Home() {
                       </div>
                     )}
 
+                    {onChainScore === 0 && (
+                      <div className="tee-status" style={{ marginBottom: '1.5rem', padding: '1rem', borderRadius: 'var(--radius-sm)', background: 'rgba(255, 255, 255, 0.03)', border: '1px dashed rgba(255, 255, 255, 0.1)', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                        Generate a verified credit score on the left to unlock deposit & borrow actions.
+                      </div>
+                    )}
+
                     <div className="input-group">
                       <div className="input-label">
                         <span className="input-label-text">Deposit Collateral (C2FLR)</span>
@@ -521,12 +530,12 @@ export default function Home() {
                               setCollateral(e.target.value);
                             }
                           }}
-                          disabled={isTxPending || isTxConfirming}
+                          disabled={onChainScore === 0 || isTxPending || isTxConfirming}
                         />
                         <button
                           className="btn btn-secondary cursor-target"
                           onClick={handleDeposit}
-                          disabled={isTxPending || isTxConfirming || !collateral || Number(collateral) <= 0}
+                          disabled={onChainScore === 0 || isTxPending || isTxConfirming || !collateral || Number(collateral) <= 0}
                         >
                           {(isTxPending || isTxConfirming) ? <RefreshCw size={18} className="spin" /> : 'Deposit'}
                         </button>
@@ -556,12 +565,12 @@ export default function Home() {
                               setBorrowAmount(e.target.value);
                             }
                           }}
-                          disabled={isTxPending || isTxConfirming || Number(maxBorrow) < 0.01}
+                          disabled={onChainScore === 0 || isTxPending || isTxConfirming || Number(maxBorrow) < 0.01}
                         />
                         <button
                           className="btn btn-orange cursor-target"
                           onClick={handleBorrow}
-                          disabled={isTxPending || isTxConfirming || Number(maxBorrow) < 0.01 || !borrowAmount || Number(borrowAmount) <= 0}
+                          disabled={onChainScore === 0 || isTxPending || isTxConfirming || Number(maxBorrow) < 0.01 || !borrowAmount || Number(borrowAmount) <= 0}
                         >
                           {(isTxPending || isTxConfirming) ? <RefreshCw size={18} className="spin" /> : 'Borrow'}
                         </button>
