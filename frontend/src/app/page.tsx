@@ -270,7 +270,7 @@ export default function Home() {
           {(!mounted || !isConnected) && (
             <div className="mt-2" style={{ marginTop: '2.5rem' }}>
               <button
-                className="btn btn-primary"
+                className="btn btn-primary cursor-target"
                 style={{ padding: '1.25rem 2.5rem', fontSize: '1.125rem' }}
                 onClick={() => connect({ connector: connectors[0] })}
               >
@@ -370,7 +370,7 @@ export default function Home() {
                         </div>
 
                         {scoreStatus === 'idle' && (
-                          <button className="btn btn-primary full-width" onClick={handleComputeScore}>
+                          <button className="btn btn-primary full-width cursor-target" onClick={handleComputeScore}>
                             <Lock size={18} /> Generate Score in Secure Enclave
                           </button>
                         )}
@@ -522,7 +522,7 @@ export default function Home() {
                           disabled={isTxPending || isTxConfirming}
                         />
                         <button
-                          className="btn btn-secondary"
+                          className="btn btn-secondary cursor-target"
                           onClick={handleDeposit}
                           disabled={isTxPending || isTxConfirming || !collateral || Number(collateral) <= 0}
                         >
@@ -557,7 +557,7 @@ export default function Home() {
                           disabled={isTxPending || isTxConfirming || Number(maxBorrow) < 0.01}
                         />
                         <button
-                          className="btn btn-orange"
+                          className="btn btn-orange cursor-target"
                           onClick={handleBorrow}
                           disabled={isTxPending || isTxConfirming || Number(maxBorrow) < 0.01 || !borrowAmount || Number(borrowAmount) <= 0}
                         >
