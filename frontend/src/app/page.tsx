@@ -15,6 +15,24 @@ import StaggeredMenu from '../components/StaggeredMenu';
 const CRED_REGISTRY = '0x76d2788D3915B48d4F066a2902e29ECCAfac19dC' as const;
 const LENDING_POOL = '0x8Ab1Ab0D45F2139CBFd3390A60D484629Bb857dd' as const;
 
+const getFriendlyError = (err: any) => {
+  if (!err) return "An unknown error occurred";
+  const msg = err.shortMessage || err.message || String(err);
+  const lower = msg.toLowerCase();
+  
+  if (lower.includes('insufficient funds') || lower.includes('exceeds balance')) {
+    return "You don't have enough C2FLR to pay for gas. Please request testnet tokens from the Flare Faucet.";
+  }
+  if (lower.includes('user rejected') || lower.includes('user denied')) {
+    return "Transaction was rejected in your wallet.";
+  }
+  if (lower.includes('execution reverted')) {
+    return "Transaction was reverted. You may have already performed this action or the input data is invalid.";
+  }
+  
+  return msg.split('\n')[0]; // Return the first line to avoid massive stack traces
+};
+
 /* ── Data Source Profiles ──────────────────────────────── */
 const dataSourceProfiles = [
   { label: 'Chase Bank — Primary Checking (...4921)', accountAgeDays: 1095, totalTransactions: 847, monthlyVolumeUsd: 12500, activeMonths: 30 },
@@ -145,7 +163,7 @@ export default function Home() {
       });
     } catch (err: any) {
       console.error(err);
-      alert(`TEE Compute Error: ${err.message}`);
+      alert(`Transaction Failed: ${getFriendlyError(err)}`);
       setScoreStatus('idle');
     }
   };
@@ -504,7 +522,7 @@ export default function Home() {
                     {(isTxError || isConfirmError) && (
                       <div className="tee-status error" style={{ marginBottom: '1.5rem', padding: '1rem', borderRadius: 'var(--radius-sm)', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', fontSize: '0.875rem' }}>
                         <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>Transaction Failed</div>
-                        <div style={{ opacity: 0.8 }}>{(txError?.message || confirmError?.message || "An unknown error occurred").split('\n')[0]}</div>
+                        <div style={{ opacity: 0.8 }}>{getFriendlyError(txError || confirmError)}</div>
                       </div>
                     )}
 
