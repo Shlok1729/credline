@@ -252,26 +252,12 @@ export default function Home() {
           <div className="hero-badge">
             <Zap size={14} /> Coston2 Testnet Live
           </div>
-          <h1 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <StrokeText
-              text="Turn 180% collateral into 120%"
-              strokeColor="#FF2E93"
-              fillColor="#FFFFFF"
-              strokeWidth={1.5}
-              drawDuration={1.6}
-              fillDelay={0.2}
-              stagger={0.05}
-              ease="power2.out"
-              trigger="scroll"
-              fillMode="wipe"
-              fontSize={64}
-              fontWeight={800}
-              letterSpacing={-2}
-              reverse={false}
-              style={{ maxWidth: '1000px', margin: '0 auto' }}
-            />
+          <h1 className="scroll-reveal" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+            <span style={{ maxWidth: '1000px', margin: '0 auto', fontSize: 'clamp(2rem, 7vw, 4rem)', lineHeight: 1.1 }}>
+              Turn 180% collateral into 120%
+            </span>
             <span className="gradient-text" style={{
-              fontSize: '2.25rem',
+              fontSize: 'clamp(1.5rem, 4vw, 2.25rem)',
               fontWeight: 600,
               marginTop: '1rem',
               letterSpacing: '-0.02em',

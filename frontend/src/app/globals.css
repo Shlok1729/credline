@@ -630,6 +630,9 @@ h6 {
   background-position: right 14px center;
   transition: all 0.3s;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .select-field:focus {
@@ -1264,29 +1267,44 @@ h6 {
 
 /* ─── Mobile Responsiveness ──────────────────────── */
 @media (max-width: 768px) {
+  html, body {
+    overflow-x: hidden;
+  }
+
   .navbar-inner {
     padding: 1rem;
   }
   
   .page-container {
     padding: 0 1rem 3rem;
+    overflow-x: hidden;
   }
   
   .hero {
     min-height: 25vh;
   }
   
+  .hero-badge {
+    white-space: normal;
+    text-align: center;
+    height: auto;
+    padding: 0.5rem 1rem;
+  }
+  
   .hero h1 {
-    font-size: 2.5rem;
+    font-size: 2.2rem;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
   }
   
   .hero-subtitle {
     font-size: 1rem;
-    padding: 0 1rem;
+    padding: 0 0.5rem;
   }
   
   .connect-card {
     padding: 2rem 1.5rem;
+    max-width: 100%;
   }
   
   .card-header, .card-body {
@@ -1309,14 +1327,24 @@ h6 {
 
   .steps-bar {
     padding: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .step-item {
+    width: 100%;
   }
   
   .step-text {
-    font-size: 0.75rem;
+    font-size: 0.875rem;
+    white-space: normal;
   }
   
   .step-line {
-    margin: 0 0.5rem;
+    width: 2px;
+    height: 1rem;
+    margin: 0 0 0 15px; /* Aligns with the circle */
   }
   
   .footer {
