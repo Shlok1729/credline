@@ -219,7 +219,7 @@ export default function Home() {
         logoNode={
           <Link href="/" style={{ textDecoration: 'none' }}>
             <div className="logo" style={{ cursor: 'pointer' }}>
-              <div className="logo-icon">C</div>
+              <img src="/credlogo.jpeg" alt="CredLine Logo" style={{ width: 32, height: 32, borderRadius: 8, objectFit: 'cover' }} />
               <div className="logo-text">CredLine</div>
             </div>
           </Link>

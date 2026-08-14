@@ -70,16 +70,13 @@ export default function InitialLoader() {
           position: 'absolute',
           inset: '12px',
           borderRadius: '50%',
-          background: 'linear-gradient(135deg, var(--accent, #FF2E93), var(--accent-orange, #FF8A00))',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: '#fff',
-          fontWeight: 800,
-          fontSize: '1.25rem',
-          animation: 'pulse 2s ease-in-out infinite'
+          animation: 'pulse 2s ease-in-out infinite',
+          overflow: 'hidden'
         }}>
-          C
+          <img src="/credlogo.jpeg" alt="CredLine Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
       </div>
 
